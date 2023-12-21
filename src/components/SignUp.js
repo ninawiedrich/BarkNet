@@ -11,7 +11,6 @@ function SignUp() {
   const navigate = useNavigate();
 
   const validatePassword = (password) => {
-    // TODO: Adjust the regex for desired password complexity
     return password.length >= 8 && /[A-Z]/.test(password) && /\d/.test(password) && /\W/.test(password);
   };
 
