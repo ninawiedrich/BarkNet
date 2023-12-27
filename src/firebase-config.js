@@ -1,16 +1,18 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDOwbIL4Y-pBIf0x3UZ9GzuHPx_O41sAnA",
-  authDomain: "barknet-9f96b.firebaseapp.com",
-  projectId: "barknet-9f96b",
-  storageBucket: "barknet-9f96b.appspot.com",
-  messagingSenderId: "1008694935006",
-  appId: "1:1008694935006:web:81a7a0cc9880d453aab14f"
+  apiKey: "AIzaSyAdNBHPq1R8PGquBv7N0AmjSrAK3mzeGaY",
+  authDomain: "bark-net-app.firebaseapp.com",
+  projectId: "bark-net-app",
+  storageBucket: "bark-net-app.appspot.com",
+  messagingSenderId: "925313625738",
+  appId: "1:925313625738:web:eb8ee066546c95dc920773"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const firestore = getFirestore(app);
+export const storage = getStorage(app)
