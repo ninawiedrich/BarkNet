@@ -23,7 +23,7 @@ function SignUp() {
     }
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard'); // or wherever you'd like to direct the user after sign up
+      navigate('/user-profile'); // or wherever you'd like to direct the user after sign up
     } catch (error) {
       setError('Failed to create an account. Please check your details and try again.');
       console.error('SignUp Error:', error);

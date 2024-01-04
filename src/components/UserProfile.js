@@ -1,223 +1,327 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Image, ListGroup, Button, Modal, Form, Card } from 'react-bootstrap';
+import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup } from 'react-bootstrap';
 import { auth, firestore, storage } from '../firebase-config';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 function UserProfile() {
-  const [profile, setProfile] = useState({
-    owner: { name: '', age: '', rasse: '', kastriert: '', specialEffects: '', likeKids: '', likeDogs: '', likeCats: '', likePeople: '', favoriteFood: '', favoriteTrick: '', favoriteToy: '', favoritePlace: '' },
-    dog: { name: '', age: '', rasse: '', kastriert: '', specialEffects: '', likeKids: '', likeDogs: '', likeCats: '', likePeople: '', favoriteFood: '', favoriteTrick: '', favoriteToy: '', favoritePlace: '' },
-    photoUrl: 'default.jpg',
-    togetherActivities: '',
-    meetStory: '',
-    likes: '',
-    dislikes: '',
-    memorableTrip: '',
-    sharedMeal: ''
-  });
-  const [show, setShow] = useState(false);
-  const [newProfileData, setNewProfileData] = useState({
-    owner: {},
-    dog: {},
-    photoUrl: '',
-    togetherActivities: '',
-    meetStory: '',
-    likes: '',
-    dislikes: '',
-    memorableTrip: '',
-    sharedMeal: ''
-  });
-  const [file, setFile] = useState(null);
+    const [profile, setProfile] = useState({
+        owner: {
+            name: '',
+            age: '',
+            rasse: '',
+            kastriert: '',
+            specialEffects: '',
+            likeKids: '',
+            likeDogs: '',
+            likeCats: '',
+            likePeople: '',
+            favoriteFood: '',
+            favoriteTrick: '',
+            favoriteToy: '',
+            favoritePlace: '',
+            city: '',
+            state: '',
+        },
+        dog: {
+            name: '',
+            age: '',
+            rasse: '',
+            kastriert: '',
+            specialEffects: '',
+            likeKids: '',
+            likeDogs: '',
+            likeCats: '',
+            likePeople: '',
+            favoriteFood: '',
+            favoriteTrick: '',
+            favoriteToy: '',
+            favoritePlace: '',
+        },
+        photoUrl: 'default.jpg',
+        togetherActivities: '',
+        meetStory: '',
+        likes: '',
+        dislikes: '',
+        memorableTrip: '',
+        sharedMeal: '',
+    });
 
-  useEffect(() => {
-    const fetchOrCreateProfile = async () => {
-      if (!auth.currentUser) {
-        console.log('User not logged in');
-        return;
-      }
-      const userId = auth.currentUser.uid;
+    const [openDogDetails, setOpenDogDetails] = useState(false);
+    const [openOwnerDetails, setOpenOwnerDetails] = useState(false);
+    const [showEditOwner, setShowEditOwner] = useState(false);
+    const [showEditDog, setShowEditDog] = useState(false);
+    const [showEditPhoto, setShowEditPhoto] = useState(false);
+    const [newProfileData, setNewProfileData] = useState({ owner: {}, dog: {} });
+    const [file, setFile] = useState(null);
 
-      const ownerRef = doc(firestore, 'owners', userId);
-      const ownerSnap = await getDoc(ownerRef);
-      if (!ownerSnap.exists()) {
-        await updateDoc(ownerRef, newProfileData.owner);
-      }
+    useEffect(() => {
+        const fetchOrCreateProfile = async () => {
+            if (!auth.currentUser) {
+                console.log('User not logged in');
+                return;
+            }
+            const userId = auth.currentUser.uid;
 
-      const dogRef = doc(firestore, 'dogs', userId);
-      const dogSnap = await getDoc(dogRef);
-      if (!dogSnap.exists()) {
-        await updateDoc(dogRef, newProfileData.dog);
-      }
+            const ownerRef = doc(firestore, 'owners', userId);
+            const ownerSnap = await getDoc(ownerRef);
+            if (!ownerSnap.exists()) {
+                await setDoc(ownerRef, profile.owner);
+            } else {
+                setProfile((prevProfile) => ({ ...prevProfile, owner: ownerSnap.data() }));
+            }
 
-      const updatedOwnerSnap = await getDoc(ownerRef);
-      const updatedDogSnap = await getDoc(dogRef);
-      setProfile({
-        owner: updatedOwnerSnap.data(),
-        dog: updatedDogSnap.data(),
-        photoUrl: updatedOwnerSnap.data().photoUrl || updatedDogSnap.data().photoUrl || 'default.jpg',
-        togetherActivities: updatedOwnerSnap.data().togetherActivities || '',
-        meetStory: updatedOwnerSnap.data().meetStory || '',
-        likes: updatedOwnerSnap.data().likes || '',
-        dislikes: updatedOwnerSnap.data().dislikes || '',
-        memorableTrip: updatedOwnerSnap.data().memorableTrip || '',
-        sharedMeal: updatedOwnerSnap.data().sharedMeal || ''
-      });
+            const dogRef = doc(firestore, 'dogs', userId);
+            const dogSnap = await getDoc(dogRef);
+            if (!dogSnap.exists()) {
+                await setDoc(dogRef, profile.dog);
+            } else {
+                setProfile((prevProfile) => ({ ...prevProfile, dog: dogSnap.data() }));
+            }
+        };
+
+        fetchOrCreateProfile();
+    }, []);
+
+    const handleClose = () => {
+        setShowEditOwner(false);
+        setShowEditDog(false);
+        setShowEditPhoto(false);
     };
 
-    fetchOrCreateProfile();
-  }, []);
+    const handleFileChange = (e) => {
+        if (e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
 
-  const handleShow = () => setShow(true);
-  const handleClose = () => setShow(false);
+    const handleChange = (entity, field) => (e) => {
+        setNewProfileData((prevData) => ({
+            ...prevData,
+            [entity]: { ...prevData[entity], [field]: e.target.value },
+        }));
+    };
 
-  const handleProfileUpdate = async () => {
-    if (!auth.currentUser) {
-      console.log('No user logged in');
-      return;
-    }
-    const userId = auth.currentUser.uid;
+    const handleProfileUpdate = async () => {
+        if (!auth.currentUser) {
+            console.log('No user logged in');
+            return;
+        }
+        const userId = auth.currentUser.uid;
 
-    try {
-      if (file) {
-        const imageRef = ref(storage, `profileImages/${userId}`);
-        await uploadBytes(imageRef, file);
-        const photoUrl = await getDownloadURL(imageRef);
-        newProfileData.photoUrl = photoUrl;
-      }
+        try {
+            let photoUrl = profile.photoUrl;
+            if (file) {
+                const imageRef = ref(storage, `profileImages/${userId}/${file.name}`);
+                await uploadBytes(imageRef, file);
+                photoUrl = await getDownloadURL(imageRef);
+            }
 
-      await updateDoc(doc(firestore, 'owners', userId), { ...newProfileData.owner, photoUrl: newProfileData.photoUrl });
-      await updateDoc(doc(firestore, 'dogs', userId), { ...newProfileData.dog, photoUrl: newProfileData.photoUrl });
+            const updatedOwnerData = { ...newProfileData.owner };
+            if (photoUrl) {
+                updatedOwnerData.photoUrl = photoUrl;
+            }
 
-      setProfile(newProfileData);
-      console.log('Profile updated successfully');
-      setShow(false);
-    } catch (error) {
-      console.error("Error updating profile: ", error);
-    }
-  };
+            const updatedDogData = { ...newProfileData.dog };
+            if (photoUrl) {
+                updatedDogData.photoUrl = photoUrl;
+            }
 
-  const handleChange = (entity, field) => (e) => {
-    setNewProfileData(prevData => ({
-      ...prevData,
-      [entity]: { ...prevData[entity], [field]: e.target.value }
-    }));
-  };
+            await updateDoc(doc(firestore, 'owners', userId), updatedOwnerData);
+            await updateDoc(doc(firestore, 'dogs', userId), updatedDogData);
 
-  const handleSharedChange = (field) => (e) => {
-    setNewProfileData({ ...newProfileData, [field]: e.target.value });
-  };
+            setProfile((prevProfile) => ({
+                ...prevProfile,
+                owner: { ...prevProfile.owner, ...updatedOwnerData },
+                dog: { ...prevProfile.dog, ...updatedDogData },
+                photoUrl,
+            }));
+            handleClose();
+        } catch (error) {
+            console.error('Error updating profile: ', error);
+        }
+    };
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+    const renderProfileDetails = (details) => {
+        return Object.entries(details).map(([key, value]) => {
+            if (key !== 'photoUrl') {
+                return (
+                    <ListGroup.Item key={key}>
+                        {`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`}
+                    </ListGroup.Item>
+                );
+            }
+            return null;
+        });
+    };
 
-  return (
-    <Container className="my-5">
-      <Row>
-        <Col md={12} className="text-center">
-          <h2 className="mb-3">Our Shared Profile</h2>
-          <Image src={profile.photoUrl} roundedCircle fluid className="profile-image" style={{ maxWidth: '150px' }} />
-        </Col>
-      </Row>
+    return (
+        <Container className="my-5">
+            {/* Profile header */}
+            <Row>
+                <Col md={12} className="text-center">
+                    <Image
+                        src={profile.photoUrl || 'path/to/default/image.jpg'}
+                        roundedCircle
+                        fluid
+                        className="profile-image"
+                        style={{ maxWidth: '150px', cursor: 'pointer' }}
+                        onClick={() => setShowEditPhoto(true)}
+                        alt="Click to edit photo"
+                        title="Click to edit photo"
+                    />
+                    <h2>{profile.dog.name || "Dog's Name"}</h2>
+                    <p>
+                        Owned by {profile.owner.name || "Owner's Name"} from {profile.owner.city || 'City'},{' '}
+                        {profile.owner.state || 'State'}
+                    </p>
+                </Col>
+            </Row>
 
-      <Row className="mt-4">
-        {/* Dog's Profile */}
-        <Col md={6}>
-          <Card className="mb-3">
-            <Card.Header>Dog's Profile</Card.Header>
-            <ListGroup variant="flush">
-              <ListGroup.Item>Name: {profile.dog.name}</ListGroup.Item>
-              <ListGroup.Item>Age: {profile.dog.age}</ListGroup.Item>
-              <ListGroup.Item>Rasse: {profile.dog.rasse}</ListGroup.Item>
-              <ListGroup.Item>Kastriert/Sterilisiert: {profile.dog.kastriert}</ListGroup.Item>
-              <ListGroup.Item>Special Effects: {profile.dog.specialEffects}</ListGroup.Item>
-              <ListGroup.Item>Like Kids: {profile.dog.likeKids}</ListGroup.Item>
-              <ListGroup.Item>Like Dogs: {profile.dog.likeDogs}</ListGroup.Item>
-              <ListGroup.Item>Like Cats: {profile.dog.likeCats}</ListGroup.Item>
-              <ListGroup.Item>Like People: {profile.dog.likePeople}</ListGroup.Item>
-              <ListGroup.Item>Favorite Food: {profile.dog.favoriteFood}</ListGroup.Item>
-              <ListGroup.Item>Favorite Trick: {profile.dog.favoriteTrick}</ListGroup.Item>
-              <ListGroup.Item>Favorite Toy: {profile.dog.favoriteToy}</ListGroup.Item>
-              <ListGroup.Item>Favorite Place: {profile.dog.favoritePlace}</ListGroup.Item>
-            </ListGroup>
-          </Card>
-        </Col>
+            {/* Dog's Profile Collapsible */}
+            <Row className="mt-4">
+                <Col md={6}>
+                    <Button
+                        onClick={() => setOpenDogDetails(!openDogDetails)}
+                        aria-controls="dog-details-collapse"
+                        aria-expanded={openDogDetails}
+                        variant="primary"
+                    >
+                        {openDogDetails ? 'Hide' : 'Show'} Dog's Profile
+                    </Button>
+                    <Collapse in={openDogDetails}>
+                        <div id="dog-details-collapse">
+                            <Card className="mb-3">
+                                <Card.Header>Dog's Profile</Card.Header>
+                                <ListGroup variant="flush">
+                                    {renderProfileDetails(profile.dog)}
+                                </ListGroup>
+                            </Card>
+                            <Button variant="primary" onClick={() => setShowEditDog(true)}>
+                                Edit Dog's Profile
+                            </Button>
+                        </div>
+                    </Collapse>
+                </Col>
 
-        {/* Owner's Profile */}
-        <Col md={6}>
-          <Card className="mb-3">
-            <Card.Header>Owner's Profile</Card.Header>
-            <ListGroup variant="flush">
-              <ListGroup.Item>Name: {profile.owner.name}</ListGroup.Item>
-              <ListGroup.Item>Age: {profile.owner.age}</ListGroup.Item>
-              <ListGroup.Item>Rasse: {profile.owner.rasse}</ListGroup.Item>
-              <ListGroup.Item>Kastriert/Sterilisiert: {profile.owner.kastriert}</ListGroup.Item>
-              <ListGroup.Item>Special Effects: {profile.owner.specialEffects}</ListGroup.Item>
-              <ListGroup.Item>Like Kids: {profile.owner.likeKids}</ListGroup.Item>
-              <ListGroup.Item>Like Dogs: {profile.owner.likeDogs}</ListGroup.Item>
-              <ListGroup.Item>Like Cats: {profile.owner.likeCats}</ListGroup.Item>
-              <ListGroup.Item>Like People: {profile.owner.likePeople}</ListGroup.Item>
-              <ListGroup.Item>Favorite Food: {profile.owner.favoriteFood}</ListGroup.Item>
-              <ListGroup.Item>Favorite Trick: {profile.owner.favoriteTrick}</ListGroup.Item>
-              <ListGroup.Item>Favorite Toy: {profile.owner.favoriteToy}</ListGroup.Item>
-              <ListGroup.Item>Favorite Place: {profile.owner.favoritePlace}</ListGroup.Item>
-            </ListGroup>
-          </Card>
-        </Col>
-      </Row>
+                {/* Owner's Profile Collapsible */}
+                <Col md={6}>
+                    <Button
+                        onClick={() => setOpenOwnerDetails(!openOwnerDetails)}
+                        aria-controls="owner-details-collapse"
+                        aria-expanded={openOwnerDetails}
+                        variant="primary"
+                    >
+                        {openOwnerDetails ? 'Hide' : 'Show'} Owner's Profile
+                    </Button>
+                    <Collapse in={openOwnerDetails}>
+                        <div id="owner-details-collapse">
+                            <Card className="mb-3">
+                                <Card.Header>Owner's Profile</Card.Header>
+                                <ListGroup variant="flush">
+                                    {renderProfileDetails(profile.owner)}
+                                </ListGroup>
+                            </Card>
+                            <Button variant="primary" onClick={() => setShowEditOwner(true)}>
+                                Edit Owner's Profile
+                            </Button>
+                        </div>
+                    </Collapse>
+                </Col>
+            </Row>
 
-      <Row>
-        <Col className="text-center mt-4">
-          <Button variant="primary" onClick={handleShow}>Edit Profiles</Button>
-        </Col>
-      </Row>
+            {/* Edit Dog's Profile Modal */}
+            <Modal show={showEditDog} onHide={handleClose} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Dog's Profile</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        {Object.entries(profile.dog).map(([key, value]) => {
+                            if (key !== 'photoUrl') {
+                                return (
+                                    <Form.Group className="mb-3" key={key}>
+                                        <Form.Label>{`${key.charAt(0).toUpperCase() + key.slice(1)}`}</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            value={newProfileData.dog[key] || value}
+                                            onChange={handleChange('dog', key)}
+                                        />
+                                    </Form.Group>
+                                );
+                            }
+                            return null;
+                        })}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleProfileUpdate}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
-      {/* Edit Profile Modal */}
-      <Modal show={show} onHide={handleClose} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Profiles</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <h5>Upload New Photo</h5>
-            <Form.Group className="mb-3">
-              <Form.Label>Photo</Form.Label>
-              <Form.Control type="file" onChange={handleFileChange} />
-            </Form.Group>
+            {/* Edit Owner's Profile Modal */}
+            <Modal show={showEditOwner} onHide={handleClose} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Owner's Profile</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        {Object.entries(profile.owner).map(([key, value]) => {
+                            if (key !== 'photoUrl') {
+                                return (
+                                    <Form.Group className="mb-3" key={key}>
+                                        <Form.Label>{`${key.charAt(0).toUpperCase() + key.slice(1)}`}</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            value={newProfileData.owner[key] || value}
+                                            onChange={handleChange('owner', key)}
+                                        />
+                                    </Form.Group>
+                                );
+                            }
+                            return null;
+                        })}
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleProfileUpdate}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
 
-            {/* Dog's Profile Form Fields */}
-            <h5>Dog's Profile</h5>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control type="text" placeholder="Dog's name" value={newProfileData.dog.name} onChange={handleChange('dog', 'name')} />
-            </Form.Group>
-            {/* Additional form fields for dog's profile details */}
-
-            {/* Owner's Profile Form Fields */}
-            <h5>Owner's Profile</h5>
-            <Form.Group className="mb-3">
-              <Form.Label>Name</Form.Label>
-              <Form.Control type="text" placeholder="Owner's name" value={newProfileData.owner.name} onChange={handleChange('owner', 'name')} />
-            </Form.Group>
-            {/* Additional form fields for owner's profile details */}
-
-            {/* Shared Experiences Form Fields */}
-            <h5>Shared Experiences</h5>
-            <Form.Group className="mb-3">
-              <Form.Label>Things we love to do together</Form.Label>
-              <Form.Control type="text" placeholder="Activities" value={newProfileData.togetherActivities} onChange={handleSharedChange('togetherActivities')} />
-            </Form.Group>
-            {/* Additional form fields for shared experiences */}
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>Close</Button>
-          <Button variant="primary" onClick={handleProfileUpdate}>Save Changes</Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
-  );
+            {/* Edit Photo Modal */}
+            <Modal show={showEditPhoto} onHide={handleClose} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Photo</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Photo</Form.Label>
+                            <Form.Control type="file" onChange={handleFileChange} />
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handleProfileUpdate}>
+                        Save Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Container>
+    );
 }
 
 export default UserProfile;

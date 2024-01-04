@@ -23,7 +23,7 @@ function SignIn() {
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      navigate('/dashboard');
+      navigate('/user-profile');
     } catch (error) {
       setError('Failed to sign in. Please check your email and password.');
       console.error('SignIn Error:', error);
@@ -34,7 +34,7 @@ function SignIn() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      navigate('/dashboard');
+      navigate('/user-profile');
     } catch (error) {
       setError('Failed to sign in with Google. Please try again.');
       console.error('Google SignIn Error:', error);
