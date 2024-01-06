@@ -3,6 +3,7 @@ import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGr
 import { auth, firestore, storage } from '../firebase-config';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import './UserProfile.css';
 
 function UserProfile() {
     const [profile, setProfile] = useState({
@@ -51,7 +52,12 @@ function UserProfile() {
     const [openOwnerDetails, setOpenOwnerDetails] = useState(false);
     const [showEditOwner, setShowEditOwner] = useState(false);
     const [showEditDog, setShowEditDog] = useState(false);
+
     const [showEditPhoto, setShowEditPhoto] = useState(false);
+
+    const [openFotos, setOpenFotos] = useState(false);
+    const [openWalks, setOpenWalks] = useState(false);
+
     const [newProfileData, setNewProfileData] = useState({ owner: {}, dog: {} });
     const [file, setFile] = useState(null);
 
@@ -117,15 +123,8 @@ function UserProfile() {
                 photoUrl = await getDownloadURL(imageRef);
             }
 
-            const updatedOwnerData = { ...newProfileData.owner };
-            if (photoUrl) {
-                updatedOwnerData.photoUrl = photoUrl;
-            }
-
-            const updatedDogData = { ...newProfileData.dog };
-            if (photoUrl) {
-                updatedDogData.photoUrl = photoUrl;
-            }
+            const updatedOwnerData = { ...newProfileData.owner, photoUrl };
+            const updatedDogData = { ...newProfileData.dog, photoUrl };
 
             await updateDoc(doc(firestore, 'owners', userId), updatedOwnerData);
             await updateDoc(doc(firestore, 'dogs', userId), updatedDogData);
@@ -157,81 +156,86 @@ function UserProfile() {
 
     return (
         <Container className="my-5">
-            {/* Profile header */}
             <Row>
-                <Col md={12} className="text-center">
+                <Col md={4} className="profile-sidebar">
                     <Image
                         src={profile.photoUrl || 'path/to/default/image.jpg'}
-                        roundedCircle
-                        fluid
                         className="profile-image"
-                        style={{ maxWidth: '150px', cursor: 'pointer' }}
                         onClick={() => setShowEditPhoto(true)}
-                        alt="Click to edit photo"
-                        title="Click to edit photo"
+                        alt="User"
                     />
-                    <h2>{profile.dog.name || "Dog's Name"}</h2>
-                    <p>
-                        Owned by {profile.owner.name || "Owner's Name"} from {profile.owner.city || 'City'},{' '}
-                        {profile.owner.state || 'State'}
-                    </p>
-                </Col>
-            </Row>
-
-            {/* Dog's Profile Collapsible */}
-            <Row className="mt-4">
-                <Col md={6}>
-                    <Button
-                        onClick={() => setOpenDogDetails(!openDogDetails)}
-                        aria-controls="dog-details-collapse"
-                        aria-expanded={openDogDetails}
-                        variant="primary"
-                    >
-                        {openDogDetails ? 'Hide' : 'Show'} Dog's Profile
+                         <div className="profile-text" style={{textAlign:'center'}}>
+                <p>I bring joy into the life of:{profile.owner.name || "Owner's Name"}</p>
+                <p><span role="img" aria-label="location">📍</span> We are living in: {profile.owner.city || 'City'}, {profile.owner.state || 'State'}</p>
+            </div>
+                    <Button variant="primary" className="profile-btn" onClick={() => setOpenDogDetails(!openDogDetails)}>
+                        Show Dog's Profile
                     </Button>
+                    <Button variant="primary" className="profile-btn" onClick={() => setOpenOwnerDetails(!openOwnerDetails)}>
+                        Show Owner's Profile
+                    </Button>
+                    {/* Additional buttons for "Our Fotos" and "Our Walks" */}
+                    <Button variant="primary" className="profile-btn" onClick={() => setOpenFotos(!openFotos)}>
+                        Our Fotos
+                    </Button>
+                    <Button variant="primary" className="profile-btn" onClick={() => setOpenWalks(!openWalks)}>
+                        Our Walks
+                    </Button>
+                </Col>
+                <Col md={8}>
                     <Collapse in={openDogDetails}>
-                        <div id="dog-details-collapse">
-                            <Card className="mb-3">
-                                <Card.Header>Dog's Profile</Card.Header>
-                                <ListGroup variant="flush">
-                                    {renderProfileDetails(profile.dog)}
-                                </ListGroup>
-                            </Card>
-                            <Button variant="primary" onClick={() => setShowEditDog(true)}>
-                                Edit Dog's Profile
-                            </Button>
-                        </div>
+                        <Card className="mb-3">
+                            <Card.Header>Dog's Profile</Card.Header>
+                            {renderProfileDetails(profile.dog)}
+                            {openDogDetails && (
+                                <Card.Body>
+                                    <Button variant="info" onClick={() => setShowEditDog(true)}>
+                                        Edit Dog's Profile
+                                    </Button>
+                                </Card.Body>
+                            )}
+                        </Card>
                     </Collapse>
-                </Col>
-
-                {/* Owner's Profile Collapsible */}
-                <Col md={6}>
-                    <Button
-                        onClick={() => setOpenOwnerDetails(!openOwnerDetails)}
-                        aria-controls="owner-details-collapse"
-                        aria-expanded={openOwnerDetails}
-                        variant="primary"
-                    >
-                        {openOwnerDetails ? 'Hide' : 'Show'} Owner's Profile
-                    </Button>
                     <Collapse in={openOwnerDetails}>
-                        <div id="owner-details-collapse">
-                            <Card className="mb-3">
-                                <Card.Header>Owner's Profile</Card.Header>
-                                <ListGroup variant="flush">
-                                    {renderProfileDetails(profile.owner)}
-                                </ListGroup>
-                            </Card>
-                            <Button variant="primary" onClick={() => setShowEditOwner(true)}>
-                                Edit Owner's Profile
-                            </Button>
-                        </div>
+                        <Card className="mb-3">
+                            <Card.Header>Owner's Profile</Card.Header>
+                            {renderProfileDetails(profile.owner)}
+                            {openOwnerDetails && (
+                                <Card.Body>
+                                    <Button variant="info" onClick={() => setShowEditOwner(true)}>
+                                        Edit Owner's Profile
+                                    </Button>
+                                </Card.Body>
+                            )}
+                        </Card>
+                    </Collapse>
+
+                           {/* Collapse for Our Fotos */}
+                           <Collapse in={openFotos}>
+                        <Card className="mb-3">
+                            <Card.Header>Our Fotos</Card.Header>
+                            <Card.Body>
+                                {/* Here you will later insert your component for handling the photo gallery */}
+                                <p>Photo gallery coming soon...</p>
+                            </Card.Body>
+                        </Card>
+                    </Collapse>
+
+                    {/* Collapse for Our Walks */}
+                    <Collapse in={openWalks}>
+                        <Card className="mb-3">
+                            <Card.Header>Our Walks</Card.Header>
+                            <Card.Body>
+                                {/* Here you will later insert your component for handling the walks */}
+                                <p>Walks information coming soon...</p>
+                            </Card.Body>
+                        </Card>
                     </Collapse>
                 </Col>
             </Row>
 
-            {/* Edit Dog's Profile Modal */}
-            <Modal show={showEditDog} onHide={handleClose} size="lg">
+            {/* Modal for Editing Dog's Profile */}
+            <Modal show={showEditDog} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Dog's Profile</Modal.Title>
                 </Modal.Header>
@@ -264,8 +268,8 @@ function UserProfile() {
                 </Modal.Footer>
             </Modal>
 
-            {/* Edit Owner's Profile Modal */}
-            <Modal show={showEditOwner} onHide={handleClose} size="lg">
+            {/* Modal for Editing Owner's Profile */}
+            <Modal show={showEditOwner} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Owner's Profile</Modal.Title>
                 </Modal.Header>
@@ -298,8 +302,8 @@ function UserProfile() {
                 </Modal.Footer>
             </Modal>
 
-            {/* Edit Photo Modal */}
-            <Modal show={showEditPhoto} onHide={handleClose} size="lg">
+            {/* Modal for Editing Profile Photo */}
+            <Modal show={showEditPhoto} onHide={handleClose}>
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Photo</Modal.Title>
                 </Modal.Header>

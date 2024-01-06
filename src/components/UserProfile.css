@@ -1,0 +1,18 @@
+.profile-sidebar {
+  padding: 20px;
+}
+
+.profile-image {
+  width: 100%;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.owned-by {
+  margin-bottom: 20px;
+}
+
+.profile-btn {
+  width: 100%;
+  margin-bottom: 10px;
+}
