@@ -16,3 +16,62 @@
   width: 100%;
   margin-bottom: 10px;
 }
+
+/* Styles for the friends section */
+.friends-card {
+  margin-top: 20px;
+}
+
+.friends-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.friends-count {
+  font-weight: bold;
+}
+
+.show-all-btn {
+  float: right;
+}
+
+/* Carousel override to show multiple items */
+.friends-carousel .carousel-inner {
+  overflow: hidden; /* Hide the overflow to line up items offscreen */
+}
+
+.friends-carousel .carousel-item {
+  display: inline-block; /* Display items inline */
+  width: calc(20% - 4px); /* 5 items at once, minus margin */
+  margin-right: 4px; /* Add some space between items */
+}
+
+/* Adjust the image size within each carousel item */
+.friend-avatar-img {
+  width: 100%; /* Make the image responsive within its container */
+  height: auto; /* Maintain aspect ratio */
+  border-radius: 50%; /* Round images */
+}
+
+/* Center the username below the avatar */
+.friend-username {
+  text-align: center;
+  margin-top: 0.5rem; /* Adjust spacing above the username */
+}
+
+/* Hide carousel controls as they may not work with multiple items */
+.friends-carousel .carousel-control-prev,
+.friends-carousel .carousel-control-next {
+  display: none;
+}
+
+/* Center items in the row within each carousel slide */
+.friends-carousel .carousel-item .row {
+  justify-content: center;
+}
+
+/* Reset padding on columns to ensure tight item grouping */
+.friends-carousel .carousel-item .col {
+  padding: 0;
+}

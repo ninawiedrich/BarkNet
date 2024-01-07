@@ -3,6 +3,8 @@ import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGr
 import { auth, firestore, storage } from '../firebase-config';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Carousel from 'react-multi-carousel';
+import 'react-multi-carousel/lib/styles.css';
 import './UserProfile.css';
 
 function UserProfile() {
@@ -60,6 +62,14 @@ function UserProfile() {
 
     const [newProfileData, setNewProfileData] = useState({ owner: {}, dog: {} });
     const [file, setFile] = useState(null);
+
+    const friends = [
+      { username: 'Friend1', avatar: 'path/to/avatar1.jpg' },
+      { username: 'Friend2', avatar: 'path/to/avatar2.jpg' },
+      { username: 'Friend3', avatar: 'path/to/avatar3.jpg' },
+      { username: 'Friend4', avatar: 'path/to/avatar4.jpg' },
+      { username: 'Friend5', avatar: 'path/to/avatar5.jpg' },
+    ];
 
     useEffect(() => {
         const fetchOrCreateProfile = async () => {
@@ -154,6 +164,51 @@ function UserProfile() {
         });
     };
 
+    const responsive = {
+      desktop: {
+          breakpoint: { max: 3000, min: 1024 },
+          items: 5
+      },
+      tablet: {
+          breakpoint: { max: 1024, min: 464 },
+          items: 2
+      },
+      mobile: {
+          breakpoint: { max: 464, min: 0 },
+          items: 1
+      }
+  };
+
+  const renderFriendsCarousel = () => (
+    <Carousel
+        swipeable={true}
+        draggable={true}
+        showDots={true}
+        responsive={responsive}
+        ssr={true} // Server-side rendering
+        infinite={true}
+        autoPlay={profile.autoPlay}
+        autoPlaySpeed={1000}
+        keyBoardControl={true}
+        customTransition="all .5"
+        transitionDuration={500}
+        containerClass="carousel-container"
+        removeArrowOnDeviceType={["tablet", "mobile"]}
+        deviceType={profile.deviceType}
+        dotListClass="custom-dot-list-style"
+        itemClass="carousel-item-padding-40-px"
+    >
+        {friends.map((friend, idx) => (
+            <div key={idx} className="carousel-friend-container">
+                <Image src={friend.avatar} roundedCircle className="friend-avatar-img" />
+                <p className="friend-username">{friend.username}</p>
+            </div>
+        ))}
+    </Carousel>
+);
+
+
+
     return (
         <Container className="my-5">
             <Row>
@@ -231,6 +286,18 @@ function UserProfile() {
                             </Card.Body>
                         </Card>
                     </Collapse>
+
+                    <Card className="friends-card">
+                        <Card.Header className="friends-card-header">
+                            Our Friends: <span className="friends-count">{friends.length}</span>
+                            <Button variant="link" className="show-all-btn">
+                                Show All
+                            </Button>
+                        </Card.Header>
+                        <Card.Body>
+                            {renderFriendsCarousel()}
+                        </Card.Body>
+                    </Card>
                 </Col>
             </Row>
 
@@ -324,6 +391,12 @@ function UserProfile() {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            <Row>
+        <Col md={4} className="profile-sidebar">
+            {/* Existing user photo and details */}
+        </Col>
+    </Row>
         </Container>
     );
 }
