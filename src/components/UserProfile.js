@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup } from 'react-bootstrap';
+import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup, InputGroup, FormControl } from 'react-bootstrap';
 import { auth, firestore, storage } from '../firebase-config';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, setDoc, updateDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
@@ -70,6 +70,9 @@ function UserProfile() {
       { username: 'Friend4', avatar: 'path/to/avatar4.jpg' },
       { username: 'Friend5', avatar: 'path/to/avatar5.jpg' },
     ];
+
+    const [posts, setPosts] = useState([]); // State to store user posts
+const [newPost, setNewPost] = useState(''); // State to store the new post text
 
     useEffect(() => {
         const fetchOrCreateProfile = async () => {
@@ -207,6 +210,40 @@ function UserProfile() {
     </Carousel>
 );
 
+// Function to handle adding a new post
+const handleAddPost = async () => {
+  if (!auth.currentUser) {
+      console.log('No user logged in');
+      return;
+  }
+
+  const userId = auth.currentUser.uid;
+
+  try {
+      // Create a new post document in Firestore
+      const postDocRef = await addDoc(collection(firestore, 'posts'), {
+          userId,
+          text: newPost,
+          createdAt: new Date(),
+      });
+
+      // Update the UI to include the new post
+      setPosts((prevPosts) => [
+          ...prevPosts,
+          {
+              id: postDocRef.id,
+              userId,
+              text: newPost,
+              createdAt: new Date(),
+          },
+      ]);
+
+      // Clear the new post input field
+      setNewPost('');
+  } catch (error) {
+      console.error('Error adding new post: ', error);
+  }
+};
 
 
     return (
@@ -298,6 +335,42 @@ function UserProfile() {
                             {renderFriendsCarousel()}
                         </Card.Body>
                     </Card>
+
+                    {/* Input field and button for adding a new post */}
+        <Form className="mt-4">
+            <InputGroup className="mb-3">
+                <FormControl
+                    placeholder="Write a new post..."
+                    aria-label="New Post"
+                    aria-describedby="basic-addon2"
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                />
+                <Button variant="primary" id="button-addon2" onClick={handleAddPost}>
+                    Add Post
+                </Button>
+            </InputGroup>
+        </Form>
+
+        {/* Section to display user posts */}
+        <Card className="mt-3">
+            <Card.Header>Posts</Card.Header>
+            <ListGroup variant="flush">
+                {posts.map((post) => (
+                       <ListGroup.Item 
+                       key={post.id} 
+                       style={{ 
+                         marginBottom: '15px', 
+                         padding: '10px', 
+                         borderRadius: '5px', 
+                         backgroundColor: '#f8f9fa',
+                         border: '1px solid #e3e3e3' // Optional: if you want to have a border
+                       }}>
+                        {post.text}
+                    </ListGroup.Item>
+                ))}
+            </ListGroup>
+        </Card>
                 </Col>
             </Row>
 

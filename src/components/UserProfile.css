@@ -75,3 +75,11 @@
 .friends-carousel .carousel-item .col {
   padding: 0;
 }
+
+/* Styles for each post card */
+.post-card {
+  margin-bottom: 15px; /* Space between cards */
+  padding: 10px; /* Padding inside each card */
+  border-radius: 5px; /* Rounded corners for the card */
+  background-color: #f8f9fa; /* Slight card background color */
+}
