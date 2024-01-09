@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup, InputGroup, FormControl } from 'react-bootstrap';
 import { auth, firestore, storage } from '../firebase-config';
 import { doc, getDoc, addDoc, setDoc, updateDoc, collection } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
 import './UserProfile.css';
+
+import PhotoGallery from './PhotoGallery';
 
 function UserProfile() {
     const [profile, setProfile] = useState({
@@ -57,7 +59,7 @@ function UserProfile() {
 
     const [showEditPhoto, setShowEditPhoto] = useState(false);
 
-    const [openFotos, setOpenFotos] = useState(false);
+    const [showPhotoGallery, setShowPhotoGallery] = useState(false);
     const [openWalks, setOpenWalks] = useState(false);
 
     const [newProfileData, setNewProfileData] = useState({ owner: {}, dog: {} });
@@ -267,9 +269,9 @@ const handleAddPost = async () => {
                         Show Owner's Profile
                     </Button>
                     {/* Additional buttons for "Our Fotos" and "Our Walks" */}
-                    <Button variant="primary" className="profile-btn" onClick={() => setOpenFotos(!openFotos)}>
-                        Our Fotos
-                    </Button>
+                    <Button variant="primary" className="profile-btn" onClick={() => setShowPhotoGallery(true)}>
+    Our Fotos
+</Button>
                     <Button variant="primary" className="profile-btn" onClick={() => setOpenWalks(!openWalks)}>
                         Our Walks
                     </Button>
@@ -299,17 +301,6 @@ const handleAddPost = async () => {
                                     </Button>
                                 </Card.Body>
                             )}
-                        </Card>
-                    </Collapse>
-
-                           {/* Collapse for Our Fotos */}
-                           <Collapse in={openFotos}>
-                        <Card className="mb-3">
-                            <Card.Header>Our Fotos</Card.Header>
-                            <Card.Body>
-                                {/* Here you will later insert your component for handling the photo gallery */}
-                                <p>Photo gallery coming soon...</p>
-                            </Card.Body>
                         </Card>
                     </Collapse>
 
@@ -442,26 +433,18 @@ const handleAddPost = async () => {
                 </Modal.Footer>
             </Modal>
 
-            {/* Modal for Editing Profile Photo */}
-            <Modal show={showEditPhoto} onHide={handleClose}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edit Photo</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Photo</Form.Label>
-                            <Form.Control type="file" onChange={handleFileChange} />
-                        </Form.Group>
-                    </Form>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                    <Button variant="primary" onClick={handleProfileUpdate}>
-                        Save Changes
-                    </Button>
+            <Modal show={showPhotoGallery} onHide={() => setShowPhotoGallery(false)}>
+    <Modal.Header closeButton>
+        <Modal.Title>Our Fotos</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+        {/* Use the PhotoGallery component here */}
+        <PhotoGallery userId={auth.currentUser.uid} />
+    </Modal.Body>
+    <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowPhotoGallery(false)}>
+            Close
+        </Button>
                 </Modal.Footer>
             </Modal>
 

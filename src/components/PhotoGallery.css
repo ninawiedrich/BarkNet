@@ -1,0 +1,8 @@
+.file-upload-button {
+  cursor: pointer;
+  display: inline-block;
+}
+
+.photo-image {
+  border-radius: 0;
+}
