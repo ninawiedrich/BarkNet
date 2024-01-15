@@ -340,6 +340,13 @@ const handleDeleteMarkedPhotos = async () => {
     return;
   }
 
+  // Extra confirmation step
+  const confirmDeletion = window.confirm("Are you sure you want to delete these photos?");
+  if (!confirmDeletion) {
+    console.log("Deletion cancelled by user.");
+    return;
+  }
+
   try {
     const deletePromises = markedPhotos.map(async (photoId) => {
 
