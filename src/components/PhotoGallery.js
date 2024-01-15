@@ -1,36 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Form } from 'react-bootstrap';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Row, Col, Card, Button, Form, Modal } from 'react-bootstrap';
 import { firestore, storage } from '../firebase-config';
-import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, addDoc, deleteDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import './PhotoGallery.css';
 
-function PhotoGallery({ userId }) {
-  const [photos, setPhotos] = useState([]);
-  const [markedPhotos, setMarkedPhotos] = useState([]);
+function PhotoGallery({ userId, markedPhotos, setMarkedPhotos, handleDeleteMarkedPhotos, photos, setPhotos, fetchPhotos}) {
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  const fetchPhotos = async () => {
-    const photosQuery = query(collection(firestore, 'userPhotos'), where('userId', '==', userId));
-    const querySnapshot = await getDocs(photosQuery);
-    const photoUrls = [];
-    querySnapshot.forEach((doc) => {
-      const photoData = doc.data();
-      photoUrls.push({ url: photoData.url, id: doc.id });
-    });
-    setPhotos(photoUrls);
-  };
 
   useEffect(() => {
     fetchPhotos();
-  }, [userId]);
+  }, [fetchPhotos]);
 
-  const handleDelete = async (photo) => {
-    const imageRef = ref(storage, photo.url);
-    await deleteObject(imageRef);
-    await deleteDoc(doc(firestore, 'userPhotos', photo.id));
-    fetchPhotos();
+  const toggleMarkedPhoto = (photoId) => {
+    if (markedPhotos.includes(photoId)) {
+      // If photoId is already in markedPhotos, remove it
+      setMarkedPhotos((prevMarkedPhotos) => prevMarkedPhotos.filter((id) => id !== photoId));
+    } else {
+      // If photoId is not in markedPhotos, add it
+      setMarkedPhotos((prevMarkedPhotos) => [...prevMarkedPhotos, photoId]);
+    }
   };
 
   const handleFileChange = async (e) => {
@@ -45,36 +37,13 @@ function PhotoGallery({ userId }) {
     fetchPhotos();
   };
 
-  const toggleMarkedPhoto = (photoId) => {
-    if (markedPhotos.includes(photoId)) {
-      setMarkedPhotos(markedPhotos.filter((id) => id !== photoId));
-    } else {
-      setMarkedPhotos([...markedPhotos, photoId]);
-    }
-  };
-
-  const performActionOnMarkedPhotos = async () => {
-    // Implement the logic for performing the action on marked photos here
-    // For example, you can delete or share the marked photos
-    // Iterate through markedPhotos and apply your logic
-    for (const photoId of markedPhotos) {
-      // Perform your action (e.g., delete the photo)
-      const photoToDelete = photos.find((photo) => photo.id === photoId);
-      if (photoToDelete) {
-        await handleDelete(photoToDelete);
-      }
-    }
-
-    // Clear the marked photos after performing the action
-    setMarkedPhotos([]);
-  };
-
   const FileUploadButton = () => (
     <label className="file-upload-button">
       <FontAwesomeIcon icon={faPlusCircle} size="2x" />
       <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
     </label>
   );
+
 
   return (
     <Container>
@@ -85,9 +54,6 @@ function PhotoGallery({ userId }) {
             <Card>
               <Card.Img variant="top" src={photo.url} className="photo-image" />
               <Card.Body>
-                <Button variant="danger" onClick={() => handleDelete(photo)}>
-                  Delete
-                </Button>
                 <Form.Check
                   type="checkbox"
                   label="Mark for Action"
@@ -99,11 +65,22 @@ function PhotoGallery({ userId }) {
           </Col>
         ))}
       </Row>
-      {markedPhotos.length > 0 && (
-        <Button variant="primary" onClick={performActionOnMarkedPhotos}>
-          Perform Action
-        </Button>
-      )}
+      <Modal show={showDeleteConfirmation} onHide={() => setShowDeleteConfirmation(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Deletion</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to delete the selected photos?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowDeleteConfirmation(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => handleDeleteMarkedPhotos(null, true)}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

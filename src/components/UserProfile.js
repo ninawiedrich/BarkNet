@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup, InputGroup, FormControl } from 'react-bootstrap';
 import { auth, firestore, storage } from '../firebase-config';
-import { doc, getDoc, addDoc, setDoc, updateDoc, collection } from 'firebase/firestore';
+import { doc, getDoc, addDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
@@ -10,47 +10,47 @@ import './UserProfile.css';
 import PhotoGallery from './PhotoGallery';
 
 function UserProfile() {
-    const [profile, setProfile] = useState({
-        owner: {
-            name: '',
-            age: '',
-            rasse: '',
-            kastriert: '',
-            specialEffects: '',
-            likeKids: '',
-            likeDogs: '',
-            likeCats: '',
-            likePeople: '',
-            favoriteFood: '',
-            favoriteTrick: '',
-            favoriteToy: '',
-            favoritePlace: '',
-            city: '',
-            state: '',
-        },
-        dog: {
-            name: '',
-            age: '',
-            rasse: '',
-            kastriert: '',
-            specialEffects: '',
-            likeKids: '',
-            likeDogs: '',
-            likeCats: '',
-            likePeople: '',
-            favoriteFood: '',
-            favoriteTrick: '',
-            favoriteToy: '',
-            favoritePlace: '',
-        },
-        photoUrl: 'default.jpg',
-        togetherActivities: '',
-        meetStory: '',
-        likes: '',
-        dislikes: '',
-        memorableTrip: '',
-        sharedMeal: '',
-    });
+  const [profile, setProfile] = useState({
+      owner: {
+          name: '',
+          age: '',
+          rasse: '',
+          kastriert: '',
+          specialEffects: '',
+          likeKids: '',
+          likeDogs: '',
+          likeCats: '',
+          likePeople: '',
+          favoriteFood: '',
+          favoriteTrick: '',
+          favoriteToy: '',
+          favoritePlace: '',
+          city: '',
+          state: '',
+      },
+      dog: {
+          name: '',
+          age: '',
+          rasse: '',
+          kastriert: '',
+          specialEffects: '',
+          likeKids: '',
+          likeDogs: '',
+          likeCats: '',
+          likePeople: '',
+          favoriteFood: '',
+          favoriteTrick: '',
+          favoriteToy: '',
+          favoritePlace: '',
+      },
+      photoUrl: 'default.jpg',
+      togetherActivities: '',
+      meetStory: '',
+      likes: '',
+      dislikes: '',
+      memorableTrip: '',
+      sharedMeal: '',
+  });
 
     const [openDogDetails, setOpenDogDetails] = useState(false);
     const [openOwnerDetails, setOpenOwnerDetails] = useState(false);
@@ -58,6 +58,8 @@ function UserProfile() {
     const [showEditDog, setShowEditDog] = useState(false);
 
     const [showEditPhoto, setShowEditPhoto] = useState(false);
+    const [userId, setUserId] = useState(null); // Define userId state
+    const [photos, setPhotos] = useState([]); // Define photos state
 
     const [showPhotoGallery, setShowPhotoGallery] = useState(false);
     const [openWalks, setOpenWalks] = useState(false);
@@ -76,7 +78,18 @@ function UserProfile() {
     const [posts, setPosts] = useState([]); // State to store user posts
 const [newPost, setNewPost] = useState(''); // State to store the new post text
 
-    useEffect(() => {
+
+const [markedPhotos, setMarkedPhotos] = useState([]); // State to store marked photos
+
+const [photosData, setPhotosData] = useState({ photos: [], fetchPhotos: () => {} });
+
+useEffect(() => {
+  if (auth.currentUser) {
+    setUserId(auth.currentUser.uid); // Set userId once the user is authenticated
+  }
+}, []);
+   
+useEffect(() => {
         const fetchOrCreateProfile = async () => {
             if (!auth.currentUser) {
                 console.log('User not logged in');
@@ -110,10 +123,42 @@ const [newPost, setNewPost] = useState(''); // State to store the new post text
         setShowEditPhoto(false);
     };
 
-    const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setFile(e.target.files[0]);
+    const handleFileChange = async (e) => {
+      try {
+        const file = e.target.files[0];
+        if (!file) {
+          console.log("No file selected");
+          return;
         }
+    
+        console.log("File selected:", file.name);
+        console.log("Current userId:", userId);
+    
+        if (!userId) {
+          console.log("User ID is not defined");
+          return;
+        }
+    
+        const imageRef = ref(storage, `userPhotos/${userId}/${file.name}`);
+        console.log("Uploading to:", imageRef.fullPath);
+    
+        await uploadBytes(imageRef, file);
+        console.log("Upload complete");
+    
+        const downloadURL = await getDownloadURL(imageRef);
+        console.log("Download URL:", downloadURL);
+    
+        await addDoc(collection(firestore, 'userPhotos'), {
+          userId,
+          url: downloadURL,
+        });
+        console.log("Firestore document added");
+    
+        fetchPhotos(); // Refresh the photo gallery
+        console.log("Fetching photos after upload");
+      } catch (error) {
+        console.error("Error during file upload:", error);
+      }
     };
 
     const handleChange = (entity, field) => (e) => {
@@ -247,6 +292,106 @@ const handleAddPost = async () => {
   }
 };
 
+const fetchPhotos = useCallback(async () => {
+  const photosQuery = query(collection(firestore, 'userPhotos'), where('userId', '==', userId));
+  const querySnapshot = await getDocs(photosQuery);
+  const photoUrls = [];
+  querySnapshot.forEach((doc) => {
+    const photoData = doc.data();
+    photoUrls.push({ url: photoData.url, id: doc.id });
+  });
+  setPhotos(photoUrls);
+}, [userId]);
+
+const handleShare = async () => {
+  console.log('Sharing marked photos:', markedPhotos);
+  try {
+    if (markedPhotos.length === 0) {
+      // No photos marked for sharing
+      return;
+    }
+
+    const postText = 'Check out these photos!';
+    const newPost = {
+      userId: auth.currentUser.uid,
+      text: postText,
+      photos: markedPhotos,
+      createdAt: new Date(),
+    };
+
+    const postDocRef = await addDoc(collection(firestore, 'wallPosts'), newPost);
+
+    // Add the new post to the local state to update the UI
+    setPosts(prevPosts => [
+      ...prevPosts,
+      { ...newPost, id: postDocRef.id }
+    ]);
+
+    setMarkedPhotos([]); // Clear the marked photos
+  } catch (error) {
+    console.error('Error sharing photos: ', error);
+  }
+};
+
+
+const handleDeleteMarkedPhotos = async () => {
+  if (markedPhotos.length === 0) {
+    console.log("No photos selected for deletion.");
+    return;
+  }
+
+  try {
+    const deletePromises = markedPhotos.map(async (photoId) => {
+
+  // Get the Firestore document for the photoId
+  const photoDocRef = doc(firestore, 'userPhotos', photoId);
+  const photoDoc = await getDoc(photoDocRef);
+
+  // If the document exists and has a url field, proceed with deletion
+  if (photoDoc.exists() && photoDoc.data().url) {
+    // Extract the file path from the URL stored in Firestore
+    const filePath = new URL(photoDoc.data().url).pathname.split('/o/')[1].split('?')[0];
+    const decodedFilePath = decodeURIComponent(filePath).replace(/%2F/g, '/');
+
+    // Create a reference to the storage object
+    const photoStorageRef = ref(storage, decodedFilePath);
+
+    // Delete the photo from Firebase Storage
+    await deleteObject(photoStorageRef);
+  }
+
+  // Delete the Firestore document
+  await deleteDoc(photoDocRef);
+});
+
+// Wait for all deletions to complete
+await Promise.all(deletePromises);
+
+// Update UI by removing deleted photos from state
+setMarkedPhotos([]);
+
+// Fetch the updated list of photos after deletion
+fetchPhotos();
+} catch (error) {
+console.error("Error deleting marked photos: ", error);
+}
+};
+
+   // Function to render user posts along with their photos
+   const renderPosts = () => {
+    return posts.map(post => (
+        <Card key={post.id} className="mb-3">
+            <Card.Body>
+                <Card.Text>{post.text}</Card.Text>
+                {post.photos && post.photos.map((url, index) => (
+                    <img key={index} src={url} alt={`Post Image ${index}`} className="img-fluid" />
+                ))}
+            </Card.Body>
+        </Card>
+    ));
+};
+
+
 
     return (
         <Container className="my-5">
@@ -345,23 +490,19 @@ const handleAddPost = async () => {
 
         {/* Section to display user posts */}
         <Card className="mt-3">
-            <Card.Header>Posts</Card.Header>
-            <ListGroup variant="flush">
-                {posts.map((post) => (
-                       <ListGroup.Item 
-                       key={post.id} 
-                       style={{ 
-                         marginBottom: '15px', 
-                         padding: '10px', 
-                         borderRadius: '5px', 
-                         backgroundColor: '#f8f9fa',
-                         border: '1px solid #e3e3e3' // Optional: if you want to have a border
-                       }}>
-                        {post.text}
-                    </ListGroup.Item>
-                ))}
-            </ListGroup>
-        </Card>
+                        <Card.Header>Posts</Card.Header>
+                        <ListGroup variant="flush">
+                            {posts.map((post) => (
+                                <ListGroup.Item key={post.id} style={{ marginBottom: '15px', padding: '10px', borderRadius: '5px', backgroundColor: '#f8f9fa', border: '1px solid #e3e3e3' }}>
+                                    {post.text}
+                                    {/* Displaying photos if they exist */}
+                                    {post.photos && post.photos.map((url, index) => (
+                                        <img key={index} src={url} alt={`Post Image ${index}`} className="img-fluid" />
+                                    ))}
+                                </ListGroup.Item>
+                            ))}
+                        </ListGroup>
+                    </Card>
                 </Col>
             </Row>
 
@@ -439,12 +580,30 @@ const handleAddPost = async () => {
     </Modal.Header>
     <Modal.Body>
         {/* Use the PhotoGallery component here */}
-        <PhotoGallery userId={auth.currentUser.uid} />
+        <PhotoGallery   userId={auth.currentUser.uid}
+  markedPhotos={markedPhotos}
+  setMarkedPhotos={setMarkedPhotos}
+  photosData={photosData}
+  setPhotosData={setPhotosData}
+  handleDeleteMarkedPhotos={handleDeleteMarkedPhotos}
+  photos={photos}
+  setPhotos={setPhotos}
+  fetchPhotos={fetchPhotos}
+  handleFileChange={handleFileChange}  />
     </Modal.Body>
     <Modal.Footer>
+    <Button variant="primary" onClick={handleShare}>
+    Share
+</Button>
         <Button variant="secondary" onClick={() => setShowPhotoGallery(false)}>
             Close
         </Button>
+        <Button 
+    variant="danger" 
+    onClick={handleDeleteMarkedPhotos} // Function to delete selected photos
+  >
+    Delete
+  </Button>
                 </Modal.Footer>
             </Modal>
 
