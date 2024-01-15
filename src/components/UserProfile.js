@@ -6,7 +6,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
 import './UserProfile.css';
-
+import NewPost from './NewPost';
 import PhotoGallery from './PhotoGallery';
 
 function UserProfile() {
@@ -257,38 +257,20 @@ useEffect(() => {
     </Carousel>
 );
 
-// Function to handle adding a new post
-const handleAddPost = async () => {
-  if (!auth.currentUser) {
-      console.log('No user logged in');
-      return;
-  }
-
-  const userId = auth.currentUser.uid;
-
+const addNewPostToState = async (newPostData) => {
   try {
-      // Create a new post document in Firestore
-      const postDocRef = await addDoc(collection(firestore, 'posts'), {
-          userId,
-          text: newPost,
-          createdAt: new Date(),
-      });
+    const postDocRef = await addDoc(collection(firestore, 'posts'), newPostData);
 
-      // Update the UI to include the new post
-      setPosts((prevPosts) => [
-          ...prevPosts,
-          {
-              id: postDocRef.id,
-              userId,
-              text: newPost,
-              createdAt: new Date(),
-          },
-      ]);
-
-      // Clear the new post input field
-      setNewPost('');
+    // Add the new post to the state for immediate display
+    setPosts((prevPosts) => [
+      ...prevPosts,
+      {
+        id: postDocRef.id,
+        ...newPostData
+      }
+    ]);
   } catch (error) {
-      console.error('Error adding new post: ', error);
+    console.error('Error adding new post: ', error);
   }
 };
 
@@ -480,20 +462,7 @@ console.error("Error deleting marked photos: ", error);
                     </Card>
 
                     {/* Input field and button for adding a new post */}
-        <Form className="mt-4">
-            <InputGroup className="mb-3">
-                <FormControl
-                    placeholder="Write a new post..."
-                    aria-label="New Post"
-                    aria-describedby="basic-addon2"
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                />
-                <Button variant="primary" id="button-addon2" onClick={handleAddPost}>
-                    Add Post
-                </Button>
-            </InputGroup>
-        </Form>
+                    <NewPost userId={userId} fetchPhotos={fetchPhotos} addNewPostToState={addNewPostToState} />
 
         {/* Section to display user posts */}
         <Card className="mt-3">
