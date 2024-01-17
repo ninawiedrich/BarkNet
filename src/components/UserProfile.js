@@ -286,34 +286,35 @@ const fetchPhotos = useCallback(async () => {
 }, [userId]);
 
 const handleShare = async () => {
-  console.log('Sharing marked photos:', markedPhotos);
+  if (markedPhotos.length === 0) {
+    alert("No photos selected for sharing.");
+    return;
+  }
+
+  // Get the URLs of the selected photos
+  const sharedPhotosUrls = markedPhotos.map(photoId => {
+    const photo = photos.find(p => p.id === photoId);
+    return photo.url;
+  });
+
+  // Create a new post object
+  const newPost = {
+    userId: userId,
+    text: "Check out these photos!",
+    photos: sharedPhotosUrls,
+    createdAt: new Date(),
+  };
+
   try {
-    if (markedPhotos.length === 0) {
-      // No photos marked for sharing
-      return;
-    }
-
-    const postText = 'Check out these photos!';
-    const newPost = {
-      userId: auth.currentUser.uid,
-      text: postText,
-      photos: markedPhotos,
-      createdAt: new Date(),
-    };
-
-    const postDocRef = await addDoc(collection(firestore, 'wallPosts'), newPost);
-
-    // Add the new post to the local state to update the UI
-    setPosts(prevPosts => [
-      ...prevPosts,
-      { ...newPost, id: postDocRef.id }
-    ]);
-
-    setMarkedPhotos([]); // Clear the marked photos
+    await addDoc(collection(firestore, 'wallPosts'), newPost);
+    alert("Photos shared successfully!");
+    setMarkedPhotos([]); // Clear the marked photos after sharing
   } catch (error) {
-    console.error('Error sharing photos: ', error);
+    console.error("Error sharing photos: ", error);
+    alert("Failed to share photos. Please try again.");
   }
 };
+
 
 
 const handleDeleteMarkedPhotos = async () => {
@@ -366,121 +367,107 @@ console.error("Error deleting marked photos: ", error);
 }
 };
 
-   // Function to render user posts along with their photos
-   const renderPosts = () => {
-    return posts.map(post => (
-        <Card key={post.id} className="mb-3">
-            <Card.Body>
-                <Card.Text>{post.text}</Card.Text>
-                {post.photos && post.photos.map((url, index) => (
-                    <img key={index} src={url} alt={`Post Image ${index}`} className="img-fluid" />
-                ))}
-            </Card.Body>
-        </Card>
-    ));
+ // Function to render user posts along with their photos
+const renderPosts = () => {
+  return posts.map(post => (
+    <Card key={post.id} className="mb-3">
+      <Card.Body>
+        <Card.Text>{post.text}</Card.Text>
+        {/* Displaying the photo if it exists */}
+        {post.photoUrl && (
+          <img src={post.photoUrl} alt="Post" className="img-fluid post-image" />
+        )}
+      </Card.Body>
+    </Card>
+  ));
 };
 
 
 
-    return (
-        <Container className="my-5">
-            <Row>
-                <Col md={4} className="profile-sidebar">
-                    <Image
-                        src={profile.photoUrl || 'path/to/default/image.jpg'}
-                        className="profile-image"
-                        onClick={() => setShowEditPhoto(true)}
-                        alt="User"
-                    />
-                         <div className="profile-text" style={{textAlign:'center'}}>
-                <p>I bring joy into the life of:{profile.owner.name || "Owner's Name"}</p>
-                <p><span role="img" aria-label="location">📍</span> We are living in: {profile.owner.city || 'City'}, {profile.owner.state || 'State'}</p>
-            </div>
-                    <Button variant="primary" className="profile-btn" onClick={() => setOpenDogDetails(!openDogDetails)}>
-                        Show Dog's Profile
-                    </Button>
-                    <Button variant="primary" className="profile-btn" onClick={() => setOpenOwnerDetails(!openOwnerDetails)}>
-                        Show Owner's Profile
-                    </Button>
-                    {/* Additional buttons for "Our Fotos" and "Our Walks" */}
-                    <Button variant="primary" className="profile-btn" onClick={() => setShowPhotoGallery(true)}>
-    Our Fotos
-</Button>
-                    <Button variant="primary" className="profile-btn" onClick={() => setOpenWalks(!openWalks)}>
-                        Our Walks
-                    </Button>
-                </Col>
-                <Col md={8}>
-                    <Collapse in={openDogDetails}>
-                        <Card className="mb-3">
-                            <Card.Header>Dog's Profile</Card.Header>
-                            {renderProfileDetails(profile.dog)}
-                            {openDogDetails && (
-                                <Card.Body>
-                                    <Button variant="info" onClick={() => setShowEditDog(true)}>
-                                        Edit Dog's Profile
-                                    </Button>
-                                </Card.Body>
-                            )}
-                        </Card>
-                    </Collapse>
-                    <Collapse in={openOwnerDetails}>
-                        <Card className="mb-3">
-                            <Card.Header>Owner's Profile</Card.Header>
-                            {renderProfileDetails(profile.owner)}
-                            {openOwnerDetails && (
-                                <Card.Body>
-                                    <Button variant="info" onClick={() => setShowEditOwner(true)}>
-                                        Edit Owner's Profile
-                                    </Button>
-                                </Card.Body>
-                            )}
-                        </Card>
-                    </Collapse>
+return (
+  <Container className="my-5">
+      <Row>
+          <Col md={4} className="profile-sidebar">
+              <Image
+                  src={profile.photoUrl || 'path/to/default/image.jpg'}
+                  className="profile-image"
+                  onClick={() => setShowEditPhoto(true)}
+                  alt="User"
+              />
+              <div className="profile-text" style={{ textAlign: 'center' }}>
+                  <p>I bring joy into the life of: {profile.owner.name || "Owner's Name"}</p>
+                  <p><span role="img" aria-label="location">📍</span> We are living in: {profile.owner.city || 'City'}, {profile.owner.state || 'State'}</p>
+              </div>
+              <Button variant="primary" className="profile-btn" onClick={() => setOpenDogDetails(!openDogDetails)}>
+                  Show Dog's Profile
+              </Button>
+              <Button variant="primary" className="profile-btn" onClick={() => setOpenOwnerDetails(!openOwnerDetails)}>
+                  Show Owner's Profile
+              </Button>
+              <Button variant="primary" className="profile-btn" onClick={() => setShowPhotoGallery(true)}>
+                  Our Fotos
+              </Button>
+              <Button variant="primary" className="profile-btn" onClick={() => setOpenWalks(!openWalks)}>
+                  Our Walks
+              </Button>
+          </Col>
 
-                    {/* Collapse for Our Walks */}
-                    <Collapse in={openWalks}>
-                        <Card className="mb-3">
-                            <Card.Header>Our Walks</Card.Header>
-                            <Card.Body>
-                                {/* Here you will later insert your component for handling the walks */}
-                                <p>Walks information coming soon...</p>
-                            </Card.Body>
-                        </Card>
-                    </Collapse>
+          <Col md={8}>
+              <Collapse in={openDogDetails}>
+                  <Card className="mb-3">
+                      <Card.Header>Dog's Profile</Card.Header>
+                      {renderProfileDetails(profile.dog)}
+                      {openDogDetails && (
+                          <Card.Body>
+                              <Button variant="info" onClick={() => setShowEditDog(true)}>
+                                  Edit Dog's Profile
+                              </Button>
+                          </Card.Body>
+                      )}
+                  </Card>
+              </Collapse>
+              <Collapse in={openOwnerDetails}>
+                  <Card className="mb-3">
+                      <Card.Header>Owner's Profile</Card.Header>
+                      {renderProfileDetails(profile.owner)}
+                      {openOwnerDetails && (
+                          <Card.Body>
+                              <Button variant="info" onClick={() => setShowEditOwner(true)}>
+                                  Edit Owner's Profile
+                              </Button>
+                          </Card.Body>
+                      )}
+                  </Card>
+              </Collapse>
 
-                    <Card className="friends-card">
-                        <Card.Header className="friends-card-header">
-                            Our Friends: <span className="friends-count">{friends.length}</span>
-                            <Button variant="link" className="show-all-btn">
-                                Show All
-                            </Button>
-                        </Card.Header>
-                        <Card.Body>
-                            {renderFriendsCarousel()}
-                        </Card.Body>
-                    </Card>
+              {/* Friends Carousel */}
+              <Card className="friends-card">
+                  <Card.Header className="friends-card-header">
+                      Our Friends: <span className="friends-count">{friends.length}</span>
+                      <Button variant="link" className="show-all-btn">Show All</Button>
+                  </Card.Header>
+                  <Card.Body>{renderFriendsCarousel()}</Card.Body>
+              </Card>
 
-                    {/* Input field and button for adding a new post */}
-                    <NewPost userId={userId} fetchPhotos={fetchPhotos} addNewPostToState={addNewPostToState} />
+              {/* New Post Component */}
+              <NewPost userId={userId} fetchPhotos={fetchPhotos} addNewPostToState={addNewPostToState} />
 
-        {/* Section to display user posts */}
-        <Card className="mt-3">
-                        <Card.Header>Posts</Card.Header>
-                        <ListGroup variant="flush">
-                            {posts.map((post) => (
-                                <ListGroup.Item key={post.id} style={{ marginBottom: '15px', padding: '10px', borderRadius: '5px', backgroundColor: '#f8f9fa', border: '1px solid #e3e3e3' }}>
-                                    {post.text}
-                                    {/* Displaying photos if they exist */}
-                                    {post.photos && post.photos.map((url, index) => (
-                                        <img key={index} src={url} alt={`Post Image ${index}`} className="img-fluid" />
-                                    ))}
-                                </ListGroup.Item>
-                            ))}
-                        </ListGroup>
-                    </Card>
-                </Col>
-            </Row>
+              {/* Posts Section */}
+              <Card className="mt-3">
+                  <Card.Header>Posts</Card.Header>
+                  <ListGroup variant="flush">
+                      {posts.map(post => (
+                          <ListGroup.Item key={post.id} style={{ marginBottom: '15px', padding: '10px', borderRadius: '5px', backgroundColor: '#f8f9fa', border: '1px solid #e3e3e3' }}>
+                              {post.text}
+                              {post.photoUrl && (
+                                  <img src={post.photoUrl} alt="Post" className="img-fluid " style={{ width: '100%', maxWidth: '300px', height: 'auto', display: 'block', margin: '10px auto' }} />
+                              )}
+                          </ListGroup.Item>
+                      ))}
+                  </ListGroup>
+              </Card>
+          </Col>
+      </Row>
 
             {/* Modal for Editing Dog's Profile */}
             <Modal show={showEditDog} onHide={handleClose}>
