@@ -77,6 +77,7 @@ function UserProfile() {
 
     const [posts, setPosts] = useState([]); // State to store user posts
 const [newPost, setNewPost] = useState(''); // State to store the new post text
+const [sharePostText, setSharePostText] = useState('');
 
 
 const [markedPhotos, setMarkedPhotos] = useState([]); // State to store marked photos
@@ -300,7 +301,7 @@ const handleShare = async () => {
   // Create a new post object
   const newPost = {
     userId: userId,
-    text: "Check out these photos!",
+    text: sharePostText,
     photos: sharedPhotosUrls,
     createdAt: new Date(),
   };
@@ -553,6 +554,17 @@ return (
   setPhotos={setPhotos}
   fetchPhotos={fetchPhotos}
   handleFileChange={handleFileChange}  />
+
+<Form.Group controlId="sharePostText">
+        <Form.Label>Post Text</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={3}
+          placeholder="Enter text to share with the photos"
+          value={sharePostText}
+          onChange={(e) => setSharePostText(e.target.value)}
+        />
+      </Form.Group>
     </Modal.Body>
     <Modal.Footer>
     <Button variant="primary" onClick={handleShare}>
