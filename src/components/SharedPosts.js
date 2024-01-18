@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Container } from 'react-bootstrap';
-import { firestore, auth } from '../firebase-config'; // Import 'auth' from Firebase config
+import { firestore } from '../firebase-config'; // Import your Firebase config
 import { collection, getDocs } from 'firebase/firestore';
 
 function SharedPosts() {
@@ -8,7 +8,17 @@ function SharedPosts() {
 
   const fetchPosts = async () => {
     const querySnapshot = await getDocs(collection(firestore, 'wallPosts'));
-    const postsData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const postsData = querySnapshot.docs.map((doc) => {
+      const postData = doc.data();
+      return {
+        id: doc.id,
+        username: postData.username,
+        avatar: postData.avatar, // Ensure this field exists in your Firestore documents
+        text: postData.text,
+        photos: postData.photos,
+        createdAt: postData.createdAt,
+      };
+    });
     setPosts(postsData);
   };
 
@@ -16,6 +26,7 @@ function SharedPosts() {
     fetchPosts();
   }, []);
 
+  // JSX for rendering posts
   return (
     <Container className="my-5">
       {posts.map((post) => (
@@ -23,7 +34,7 @@ function SharedPosts() {
           <Card.Header>
             <div className="d-flex align-items-center">
               <img
-                src={auth.currentUser ? auth.currentUser.photoURL : ''}
+                src={post.avatar || 'default_avatar_url'} // Provide a default avatar URL
                 alt={`${post.username}'s Avatar`}
                 style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
               />
