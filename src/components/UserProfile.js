@@ -87,6 +87,16 @@ function UserProfile() {
 
   const [currentUser, setCurrentUser] = useState(auth.currentUser);
 
+  const [triggerFetch, setTriggerFetch] = useState(false);
+
+  const refreshPosts = async () => {
+    const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId));
+    const querySnapshot = await getDocs(postsQuery);
+    const userPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setPosts(userPosts);
+};
+
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
@@ -99,6 +109,23 @@ function UserProfile() {
     // Cleanup subscription on unmount
     return unsubscribe;
   }, [currentUser]);
+
+  useEffect(() => {
+    const fetchUserPosts = async () => {
+      if (!userId) return;
+  
+      const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId));
+      const querySnapshot = await getDocs(postsQuery);
+      const userPosts = querySnapshot.docs.map(doc => {
+        // Ensure that photoUrl or photos (whichever field you use) is being fetched correctly
+        const data = doc.data();
+        return { id: doc.id, ...data };
+      });
+      setPosts(userPosts);
+    };
+  
+    fetchUserPosts();
+  }, [userId, triggerFetch]); // Depend on userId to re-fetch when it changes
 
   // Fetch or create profile
   const fetchOrCreateProfile = async (userId) => {
@@ -284,15 +311,12 @@ function UserProfile() {
 
   const addNewPostToState = async (newPostData) => {
     try {
-      const postDocRef = await addDoc(collection(firestore, 'posts'), newPostData);
-
-      // Add the new post to the state for immediate display
+      const postDocRef = await addDoc(collection(firestore, 'wallPosts'), newPostData);
+  
+      // Immediately display the new post by adding it to the existing posts state
       setPosts((prevPosts) => [
-        ...prevPosts,
-        {
-          id: postDocRef.id,
-          ...newPostData
-        }
+        { id: postDocRef.id, ...newPostData },
+        ...prevPosts
       ]);
     } catch (error) {
       console.error('Error adding new post: ', error);
@@ -335,7 +359,9 @@ function UserProfile() {
     try {
       await addDoc(collection(firestore, 'wallPosts'), newPost);
       alert("Photos shared successfully!");
-      setMarkedPhotos([]); // Clear the marked photos after sharing
+      setMarkedPhotos([]);
+      // Trigger a re-fetch of posts
+      setTriggerFetch(prev => !prev);
     } catch (error) {
       console.error("Error sharing photos: ", error);
       alert("Failed to share photos. Please try again.");
@@ -392,16 +418,34 @@ function UserProfile() {
     }
   };
 
-  // Function to render user posts along with their photos
-  const renderPosts = () => {
+// Function to render user posts along with their photos
+const renderPosts = () => {
   return posts.map(post => (
     <Card key={post.id} className="mb-3">
+      <Card.Header>
+        <div className="d-flex align-items-center">
+          <img
+            src={post.avatar || 'default_avatar_url'} // Provide a default avatar URL
+            alt={`${post.username}'s Avatar`}
+            style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
+          />
+          <span>{post.username}</span>
+        </div>
+        <small className="text-muted">
+          Posted on: {new Date(post.createdAt.seconds * 1000).toLocaleString()}
+        </small>
+      </Card.Header>
       <Card.Body>
         <Card.Text>{post.text}</Card.Text>
-        {/* Displaying the photo if it exists */}
-        {post.photoUrl && (
-          <img src={post.photoUrl} alt="Post" className="img-fluid post-image" />
-        )}
+        {post.photos && post.photos.map((url, index) => (
+          <img
+            key={index}
+            src={url}
+            alt={`Post Image ${index}`}
+            className="img-fluid"
+            style={{ maxWidth: '400px', height: 'auto', alignContent: 'center' }}
+          />
+        ))}
       </Card.Body>
     </Card>
   ));
@@ -485,22 +529,15 @@ return (
               </Card>
 
               {/* New Post Component */}
-              <NewPost userId={userId} fetchPhotos={fetchPhotos} addNewPostToState={addNewPostToState} />
+              <NewPost userId={userId} refreshPosts={refreshPosts} fetchPhotos={fetchPhotos} addNewPostToState={addNewPostToState} username={profile.owner.name} avatar={profile.photoUrl} />
 
               {/* Posts Section */}
               <Card className="mt-3">
-                  <Card.Header>Posts</Card.Header>
-                  <ListGroup variant="flush">
-                      {posts.map(post => (
-                          <ListGroup.Item key={post.id} style={{ marginBottom: '15px', padding: '10px', borderRadius: '5px', backgroundColor: '#f8f9fa', border: '1px solid #e3e3e3' }}>
-                              {post.text}
-                              {post.photoUrl && (
-                                  <img src={post.photoUrl} alt="Post" className="img-fluid " style={{ width: '100%', maxWidth: '300px', height: 'auto', display: 'block', margin: '10px auto' }} />
-                              )}
-                          </ListGroup.Item>
-                      ))}
-                  </ListGroup>
-              </Card>
+    <Card.Header>Posts</Card.Header>
+    <ListGroup variant="flush">
+      {renderPosts()} {/* Call the renderPosts function here */}
+    </ListGroup>
+  </Card>
           </Col>
       </Row>
 

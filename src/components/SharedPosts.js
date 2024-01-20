@@ -12,10 +12,10 @@ function SharedPosts() {
       const postData = doc.data();
       return {
         id: doc.id,
-        username: postData.username,
-        avatar: postData.avatar, // Ensure this field exists in your Firestore documents
+        username: postData.username || 'Default Username', // Provide a default username if not available
+        avatar: postData.avatar || 'path/to/default/avatar.jpg', // Provide a default avatar URL
         text: postData.text,
-        photos: postData.photos,
+        photos: postData.photos || [], // Ensure this is always an array
         createdAt: postData.createdAt,
       };
     });
@@ -34,7 +34,7 @@ function SharedPosts() {
           <Card.Header>
             <div className="d-flex align-items-center">
               <img
-                src={post.avatar || 'default_avatar_url'} // Provide a default avatar URL
+                src={post.avatar}
                 alt={`${post.username}'s Avatar`}
                 style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
               />
@@ -46,16 +46,15 @@ function SharedPosts() {
           </Card.Header>
           <Card.Body>
             <Card.Text>{post.text}</Card.Text>
-            {post.photos &&
-              post.photos.map((url, index) => (
-                <img
-                  key={index}
-                  src={url}
-                  alt={`Post Image ${index}`}
-                  className="img-fluid"
-                  style={{ maxWidth: '400px', height: 'auto', alignContent: 'center' }}
-                />
-              ))}
+            {post.photos.map((url, index) => (
+              <img
+                key={index}
+                src={url}
+                alt={`Post Image ${index}`}
+                className="img-fluid"
+                style={{ maxWidth: '400px', height: 'auto' }}
+              />
+            ))}
           </Card.Body>
         </Card>
       ))}
