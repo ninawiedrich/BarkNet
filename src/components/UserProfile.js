@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Image, Button, Modal, Form, Card, Collapse, ListGroup, InputGroup, FormControl } from 'react-bootstrap';
 import { auth, firestore, storage } from '../firebase-config';
-import { doc, getDoc, addDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where } from 'firebase/firestore';
+import { doc, getDoc, addDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
@@ -78,7 +78,7 @@ function UserProfile() {
   ];
 
   const [posts, setPosts] = useState([]); // State to store user posts
-  const [newPost, setNewPost] = useState(''); // State to store the new post text
+  
   const [sharePostText, setSharePostText] = useState('');
 
   const [markedPhotos, setMarkedPhotos] = useState([]); // State to store marked photos
@@ -90,7 +90,7 @@ function UserProfile() {
   const [triggerFetch, setTriggerFetch] = useState(false);
 
   const refreshPosts = async () => {
-    const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId));
+    const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(postsQuery);
     const userPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setPosts(userPosts);
@@ -437,6 +437,16 @@ const renderPosts = () => {
       </Card.Header>
       <Card.Body>
         <Card.Text>{post.text}</Card.Text>
+        {/* Check and render photoUrl if it exists */}
+        {post.photoUrl && (
+          <img
+            src={post.photoUrl}
+            alt="Post Photo"
+            className="img-fluid"
+            style={{ maxWidth: '400px', height: 'auto', alignContent: 'center' }}
+          />
+        )}
+        {/* Existing logic for rendering post.photos */}
         {post.photos && post.photos.map((url, index) => (
           <img
             key={index}

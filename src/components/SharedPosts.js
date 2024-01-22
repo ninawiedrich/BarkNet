@@ -12,10 +12,11 @@ function SharedPosts() {
       const postData = doc.data();
       return {
         id: doc.id,
-        username: postData.username || 'Default Username', // Provide a default username if not available
-        avatar: postData.avatar || 'path/to/default/avatar.jpg', // Provide a default avatar URL
+        username: postData.username,
+        avatar: postData.avatar, // Ensure this field exists in your Firestore documents
         text: postData.text,
-        photos: postData.photos || [], // Ensure this is always an array
+        photos: postData.photos,
+        photoUrl: postData.photoUrl,
         createdAt: postData.createdAt,
       };
     });
@@ -34,7 +35,7 @@ function SharedPosts() {
           <Card.Header>
             <div className="d-flex align-items-center">
               <img
-                src={post.avatar}
+                src={post.avatar || 'default_avatar_url'} // Provide a default avatar URL
                 alt={`${post.username}'s Avatar`}
                 style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
               />
@@ -46,15 +47,26 @@ function SharedPosts() {
           </Card.Header>
           <Card.Body>
             <Card.Text>{post.text}</Card.Text>
-            {post.photos.map((url, index) => (
+            {/* Check and render photoUrl if it exists */}
+            {post.photoUrl && (
               <img
-                key={index}
-                src={url}
-                alt={`Post Image ${index}`}
+                src={post.photoUrl}
+                alt="Post Photo"
                 className="img-fluid"
-                style={{ maxWidth: '400px', height: 'auto' }}
+                style={{ maxWidth: '400px', height: 'auto', alignContent: 'center' }}
               />
-            ))}
+            )}
+            {/* Logic for rendering post.photos */}
+            {post.photos &&
+              post.photos.map((url, index) => (
+                <img
+                  key={index}
+                  src={url}
+                  alt={`Post Image ${index}`}
+                  className="img-fluid"
+                  style={{ maxWidth: '400px', height: 'auto', alignContent: 'center' }}
+                />
+              ))}
           </Card.Body>
         </Card>
       ))}
