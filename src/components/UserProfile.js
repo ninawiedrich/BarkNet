@@ -10,6 +10,7 @@ import NewPost from './NewPost';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera } from '@fortawesome/free-solid-svg-icons';
 import PhotoGallery from './PhotoGallery';
+import useFetchPosts from './useFetchPosts';
 
 function UserProfile() {
   const [profile, setProfile] = useState({
@@ -96,6 +97,8 @@ function UserProfile() {
     setPosts(userPosts);
 };
 
+
+const postsFromHook = useFetchPosts();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -418,9 +421,38 @@ function UserProfile() {
     }
   };
 
+
+const toggleLikePost = async (postId) => {
+  const postRef = doc(firestore, 'wallPosts', postId);
+  const postSnap = await getDoc(postRef);
+  const currentUserUid = auth.currentUser.uid; // Getting the current user's UID
+
+  if (postSnap.exists()) {
+    let newLikes = postSnap.data().likes || [];
+    if (newLikes.includes(currentUserUid)) {
+      // Remove like
+      newLikes = newLikes.filter(uid => uid !== currentUserUid);
+    } else {
+      // Add like
+      newLikes.push(currentUserUid);
+    }
+
+    // Update Firestore
+    await updateDoc(postRef, { likes: newLikes });
+
+    // Optional: Update local state to reflect changes immediately
+    setPosts(prevPosts =>
+      prevPosts.map(post => 
+        post.id === postId ? {...post, likes: newLikes} : post
+      )
+    );
+  }
+};
+
+
 // Function to render user posts along with their photos
 const renderPosts = () => {
-  return posts.map(post => (
+  return postsFromHook.map(post => (
     <Card key={post.id} className="mb-3">
       <Card.Header>
         <div className="d-flex align-items-center">
@@ -457,6 +489,17 @@ const renderPosts = () => {
           />
         ))}
       </Card.Body>
+          <Card.Footer>
+            <div className="like-section">
+              <Button 
+                variant="outline-primary" 
+                onClick={() => toggleLikePost(post.id)}
+              >
+                {post.likes && post.likes.includes(auth.currentUser.uid) ? 'Unlike' : 'Like'}
+              </Button>
+              <span className="ms-2">{post.likes ? post.likes.length : 0} Likes</span>
+            </div>
+          </Card.Footer>
     </Card>
   ));
 };

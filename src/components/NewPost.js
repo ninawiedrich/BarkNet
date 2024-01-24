@@ -47,7 +47,10 @@ function NewPost({ userId, fetchPhotos, refreshPosts, username, avatar }) {
             photoUrl,
             username,
             avatar,
+            likes: [],
+            comments: [],
             createdAt: new Date()
+
         };
 
         try {

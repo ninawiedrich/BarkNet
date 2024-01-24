@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Container } from 'react-bootstrap';
-import { firestore } from '../firebase-config'; // Import your Firebase config
-import { collection, getDocs } from 'firebase/firestore';
+import { Card, Container, Button } from 'react-bootstrap';
+import { firestore, auth } from '../firebase-config'; // Import your Firebase config
+import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 
 function SharedPosts() {
   const [posts, setPosts] = useState([]);
@@ -21,6 +21,27 @@ function SharedPosts() {
       };
     });
     setPosts(postsData);
+  };
+
+  const toggleLikePost = async (postId) => {
+    const postRef = doc(firestore, 'wallPosts', postId);
+    const postSnap = await getDoc(postRef);
+    const currentUserUid = auth.currentUser.uid;
+
+    if (postSnap.exists()) {
+      let newLikes = postSnap.data().likes || [];
+      if (newLikes.includes(currentUserUid)) {
+        newLikes = newLikes.filter(uid => uid !== currentUserUid);
+      } else {
+        newLikes.push(currentUserUid);
+      }
+      await updateDoc(postRef, { likes: newLikes });
+      setPosts(prevPosts =>
+        prevPosts.map(post => 
+          post.id === postId ? {...post, likes: newLikes} : post
+        )
+      );
+    }
   };
 
   useEffect(() => {
@@ -68,6 +89,17 @@ function SharedPosts() {
                 />
               ))}
           </Card.Body>
+          <Card.Footer>
+            <div className="like-section">
+              <Button 
+                variant="outline-primary" 
+                onClick={() => toggleLikePost(post.id)}
+              >
+                {post.likes && post.likes.includes(auth.currentUser.uid) ? 'Unlike' : 'Like'}
+              </Button>
+              <span className="ms-2">{post.likes ? post.likes.length : 0} Likes</span>
+            </div>
+          </Card.Footer>
         </Card>
       ))}
     </Container>
