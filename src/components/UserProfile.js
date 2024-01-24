@@ -97,9 +97,6 @@ function UserProfile() {
     setPosts(userPosts);
 };
 
-
-const postsFromHook = useFetchPosts();
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
@@ -111,7 +108,7 @@ const postsFromHook = useFetchPosts();
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, [currentUser]);
+  }, []);
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -452,7 +449,7 @@ const toggleLikePost = async (postId) => {
 
 // Function to render user posts along with their photos
 const renderPosts = () => {
-  return postsFromHook.map(post => (
+  return posts.map(post => (
     <Card key={post.id} className="mb-3">
       <Card.Header>
         <div className="d-flex align-items-center">
