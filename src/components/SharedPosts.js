@@ -4,6 +4,8 @@ import { firestore, auth } from '../firebase-config'; // Import your Firebase co
 import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
 
+import CommentsSection from './CommentsSection';
+
 function SharedPosts() {
   const [posts, setPosts] = useState([]);
   const [postLikes, setPostLikes] = useState({}); // Storing user details for likes
@@ -154,6 +156,8 @@ function SharedPosts() {
           </span>
         </div>
           </Card.Footer>
+              {/* integrate CommentsSection */}
+    <CommentsSection postId={post.id} currentUser={auth.currentUser} />
         </Card>
       ))}
 

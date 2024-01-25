@@ -11,6 +11,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera } from '@fortawesome/free-solid-svg-icons';
 import PhotoGallery from './PhotoGallery';
 import { Link, useParams } from 'react-router-dom';
+import CommentsSection from './CommentsSection';
+
 
 import useFetchPosts from './useFetchPosts';
 
@@ -587,6 +589,9 @@ const renderPosts = () => {
           </span>
         </div>
       </Card.Footer>
+      {/* Inside the render method of each post */}
+<CommentsSection postId={post.id} currentUser={auth.currentUser} />
+
     </Card>
   ));
 };
