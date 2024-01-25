@@ -16,6 +16,7 @@ import useFetchPosts from './useFetchPosts';
 
 function UserProfile() {
   const { userId: urlUserId } = useParams(); 
+  console.log("URL User ID:", urlUserId);
   const [profile, setProfile] = useState({
     owner: {
       name: '',
@@ -99,12 +100,13 @@ function UserProfile() {
 const [currentPostLikes, setCurrentPostLikes] = useState([]);
 
 useEffect(() => {
+  console.log("Current User ID:", userId);
   if (!urlUserId && currentUser) {
     setUserId(currentUser.uid);
   } else {
     setUserId(urlUserId);
   }
-}, [urlUserId, currentUser]);
+}, [urlUserId, currentUser, userId]);
 
 
 
