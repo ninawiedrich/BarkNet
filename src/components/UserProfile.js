@@ -10,9 +10,12 @@ import NewPost from './NewPost';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCamera } from '@fortawesome/free-solid-svg-icons';
 import PhotoGallery from './PhotoGallery';
+import { Link, useParams } from 'react-router-dom';
+
 import useFetchPosts from './useFetchPosts';
 
 function UserProfile() {
+  const { userId: urlUserId } = useParams(); 
   const [profile, setProfile] = useState({
     owner: {
       name: '',
@@ -90,11 +93,44 @@ function UserProfile() {
 
   const [triggerFetch, setTriggerFetch] = useState(false);
 
+  const [postLikes, setPostLikes] = useState({});
+
+  const [showLikesModal, setShowLikesModal] = useState(false);
+const [currentPostLikes, setCurrentPostLikes] = useState([]);
+
+useEffect(() => {
+  if (!urlUserId && currentUser) {
+    setUserId(currentUser.uid);
+  } else {
+    setUserId(urlUserId);
+  }
+}, [urlUserId, currentUser]);
+
+
+
   const refreshPosts = async () => {
     const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(postsQuery);
     const userPosts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setPosts(userPosts);
+};
+
+const getUsernamesByIds = async (userIds) => {
+  const users = await Promise.all(userIds.map(async (userId) => {
+    const userRef = doc(firestore, 'owners', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      console.log("Fetched User Data:", userData); // Keep this line
+      return {
+        name: userData.name,
+        photoUrl: userData.photoUrl,
+        id: userId
+      };
+    }
+    return null;
+  }));
+  return users.filter(Boolean);
 };
 
   useEffect(() => {
@@ -109,6 +145,33 @@ function UserProfile() {
     // Cleanup subscription on unmount
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (userId) {
+        const ownerRef = doc(firestore, 'owners', userId);
+        const ownerSnap = await getDoc(ownerRef);
+  
+        if (ownerSnap.exists()) {
+          setProfile((prevProfile) => ({
+            ...prevProfile,
+            owner: ownerSnap.data(),
+            photoUrl: ownerSnap.data().photoUrl,
+          }));
+        }
+  
+        const dogRef = doc(firestore, 'dogs', userId);
+        const dogSnap = await getDoc(dogRef);
+  
+        if (dogSnap.exists()) {
+          setProfile((prevProfile) => ({ ...prevProfile, dog: dogSnap.data() }));
+        }
+      }
+    };
+  
+    fetchProfile();
+  }, [userId]); // Add userId as a dependency
+  
 
   useEffect(() => {
     const fetchUserPosts = async () => {
@@ -126,6 +189,22 @@ function UserProfile() {
   
     fetchUserPosts();
   }, [userId, triggerFetch]); // Depend on userId to re-fetch when it changes
+
+
+  useEffect(() => {
+    const fetchLikes = async () => {
+      const newPostLikes = {};
+      for (const post of posts) {
+        if (post.likes?.length > 0) {
+          newPostLikes[post.id] = await getUsernamesByIds(post.likes);
+        }
+      }
+      setPostLikes(newPostLikes);
+    };
+    
+    fetchLikes();
+  }, [posts]);
+  
 
   // Fetch or create profile
   const fetchOrCreateProfile = async (userId) => {
@@ -446,6 +525,13 @@ const toggleLikePost = async (postId) => {
   }
 };
 
+const handleLikesClick = async (postId) => {
+  const likes = postLikes[postId] || [];
+  setCurrentPostLikes(likes);
+  setShowLikesModal(true);
+};
+
+
 
 // Function to render user posts along with their photos
 const renderPosts = () => {
@@ -486,17 +572,19 @@ const renderPosts = () => {
           />
         ))}
       </Card.Body>
-          <Card.Footer>
-            <div className="like-section">
-              <Button 
-                variant="outline-primary" 
-                onClick={() => toggleLikePost(post.id)}
-              >
-                {post.likes && post.likes.includes(auth.currentUser.uid) ? 'Unlike' : 'Like'}
-              </Button>
-              <span className="ms-2">{post.likes ? post.likes.length : 0} Likes</span>
-            </div>
-          </Card.Footer>
+      <Card.Footer>
+        <div className="like-section">
+          <Button 
+            variant="outline-primary" 
+            onClick={() => toggleLikePost(post.id)}
+          >
+            {post.likes && post.likes.includes(auth.currentUser.uid) ? 'Unlike' : 'Like'}
+          </Button>
+          <span className="ms-2" onClick={() => handleLikesClick(post.id)}>
+            {post.likes ? post.likes.length : 0} Likes
+          </span>
+        </div>
+      </Card.Footer>
     </Card>
   ));
 };
@@ -728,6 +816,40 @@ return (
       
         </Col>
     </Row>
+
+    {/* Modal for Likes */}
+    <Modal show={showLikesModal} onHide={() => setShowLikesModal(false)}>
+  <Modal.Header closeButton>
+    <Modal.Title>Users Who Liked This Post</Modal.Title>
+  </Modal.Header>
+  <Modal.Body>
+    <ListGroup>
+      {currentPostLikes.map((user) => (
+        <ListGroup.Item key={user.id}>
+          <Link to={`/user-profile/${user.id}`}>
+            <Image 
+              src={user.photoUrl || 'path_to_default_avatar_image'} // Use user's photoUrl
+              roundedCircle 
+              style={{ width: '30px', marginRight: '10px' }} 
+              alt={user.name}
+            />
+            {user.name}
+          </Link>
+        </ListGroup.Item>
+      ))}
+    </ListGroup>
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={() => setShowLikesModal(false)}>
+      Close
+    </Button>
+  </Modal.Footer>
+</Modal>
+
+
+
+
+
         </Container>
     );
 }

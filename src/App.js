@@ -39,8 +39,11 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/user-profile/:userId" element={<UserProfile />} />
           <Route path="/user-profile" element={<UserProfile />} />
+
           <Route path="/shared-posts" element={<SharedPosts />} />
+          
         </Routes>
       </Container>
     </Router>
