@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { firestore } from '../firebase-config';
-import { collection, doc, getDoc, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, doc, getDoc, deleteDoc, addDoc, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { Card, Form, Button, ListGroup, Image } from 'react-bootstrap';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash } from '@fortawesome/free-solid-svg-icons';
 
 function CommentsSection({ postId, currentUser }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+
+  const handleDeleteComment = async (commentId) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      try {
+        await deleteDoc(doc(firestore, 'comments', commentId));
+        setComments(comments.filter(comment => comment.id !== commentId));
+      } catch (error) {
+        console.error('Error deleting comment: ', error);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchCommentsAndUsers = async () => {
@@ -84,10 +97,23 @@ function CommentsSection({ postId, currentUser }) {
         <Button variant="primary" type="submit">Comment</Button>
       </Form>
       <ListGroup variant="flush">
-        {comments.map((comment) => (
-          <ListGroup.Item key={comment.id}>
-            <Image src={comment.avatar || 'default_avatar_placeholder'} roundedCircle style={{ width: '30px', marginRight: '10px' }} />
-            <strong>{comment.username}: </strong> {comment.text}
+        {comments.map((comment, index) => (
+          <ListGroup.Item key={index} className="d-flex justify-content-between align-items-start">
+            <div className="ms-2 me-auto">
+            <div className="text-muted small">
+                Posted on: {new Date(comment.createdAt.seconds * 1000).toLocaleDateString()}
+              </div>
+              <div className="fw-bold">
+                <Image src={comment.avatar || 'default_avatar_placeholder'} roundedCircle style={{ width: '30px', marginRight: '10px' }} />
+                {comment.username}
+              </div>
+              {comment.text}
+            </div>
+            {comment.userId === currentUser.uid && (
+  <Button variant="outline-danger" size="sm" onClick={() => handleDeleteComment(comment.id)}>
+    <FontAwesomeIcon icon={faTrash} />
+  </Button>
+            )}
           </ListGroup.Item>
         ))}
       </ListGroup>
