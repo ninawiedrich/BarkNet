@@ -12,7 +12,7 @@ import { faCamera } from '@fortawesome/free-solid-svg-icons';
 import PhotoGallery from './PhotoGallery';
 import { Link, useParams } from 'react-router-dom';
 import CommentsSection from './CommentsSection';
-
+import WalkRoutes from './WalkRoutes';
 
 import useFetchPosts from './useFetchPosts';
 
@@ -100,6 +100,9 @@ function UserProfile() {
 
   const [showLikesModal, setShowLikesModal] = useState(false);
 const [currentPostLikes, setCurrentPostLikes] = useState([]);
+
+const [showWalkRoutesModal, setShowWalkRoutesModal] = useState(false);
+
 
 useEffect(() => {
   console.log("Current User ID:", userId);
@@ -631,9 +634,9 @@ return (
               <Button variant="primary" className="profile-btn" onClick={() => setShowPhotoGallery(true)}>
                   Our Fotos
               </Button>
-              <Button variant="primary" className="profile-btn" onClick={() => setOpenWalks(!openWalks)}>
-                  Our Walks
-              </Button>
+              <Button variant="primary" className="profile-btn" onClick={() => setShowWalkRoutesModal(true)}>
+    Our Walks
+</Button>
           </Col>
 
           <Col md={8}>
@@ -853,10 +856,11 @@ return (
   </Modal.Footer>
 </Modal>
 
-
-
-
-
+<WalkRoutes 
+  userId={userId} 
+  showModal={showWalkRoutesModal} 
+  handleClose={() => setShowWalkRoutesModal(false)} 
+/>
         </Container>
     );
 }

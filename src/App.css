@@ -1,3 +1,11 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Only if you want to completely remove scrolling */
+}
+
+
 .App {
   text-align: center;
 }
@@ -22,6 +30,7 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+;
 }
 
 .App-link {

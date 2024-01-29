@@ -3,6 +3,34 @@ import { Card, Form, Button, Alert, Container } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase-config';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import '../App.css';
+
+// Define your shared card style
+const sharedCardStyle = {
+  maxWidth: '500px',
+  width: '100%',
+  backdropFilter: 'blur(10px)',
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  border: '4px solid white',
+  borderRadius: '0.25rem',
+  padding: '2rem',
+  margin: 'auto',
+  color: '#000',
+};
+
+// Define the background style
+const backgroundStyle = {
+  backgroundImage: `url(${process.env.PUBLIC_URL}/background.jpg)`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
+  height: '100vh',
+  width: '100vw',
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  zIndex: -1, // Stay behind everything else
+};
 
 function SignIn() {
   const [email, setEmail] = useState('');
@@ -42,12 +70,14 @@ function SignIn() {
   };
 
   return (
-    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
-      <Card style={{ maxWidth: '400px', width: '100%' }}>
-        <Card.Body>
-          <h2 className="text-center mb-4">Sign In</h2>
-          {error && <Alert variant="danger">{error}</Alert>}
-          <Form onSubmit={signIn}>
+    <>
+      <div style={backgroundStyle} /> {/* Background image */}
+      <Container className="d-flex align-items-center justify-content-center" style={{ height: "100vh" }}>
+        <Card style={sharedCardStyle}>
+          <Card.Body>
+            <h2 className="text-center mb-4">Sign In</h2>
+            {error && <Alert variant="danger">{error}</Alert>}
+            <Form onSubmit={signIn}>
             <Form.Group id="email" className="mb-3">
               <Form.Label>Email Address</Form.Label>
               <Form.Control type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter email" />
@@ -61,14 +91,15 @@ function SignIn() {
             </Button>
           </Form>
           <Button className="w-100 mt-3" onClick={signInWithGoogle} variant="danger">
-            Sign In with Google
-          </Button>
-          <div className="w-100 text-center mt-3">
-            Don't have an account? <Link to="/signup">Register here</Link>.
-          </div>
-        </Card.Body>
-      </Card>
-    </Container>
+              Sign In with Google
+            </Button>
+            <div className="w-100 text-center mt-3">
+              Don't have an account? <Link to="/signup">Register here</Link>.
+            </div>
+          </Card.Body>
+        </Card>
+      </Container>
+    </>
   );
 }
 
