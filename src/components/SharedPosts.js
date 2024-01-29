@@ -1,36 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Container, Button, Modal, ListGroup, Image } from 'react-bootstrap';
-import { firestore, auth } from '../firebase-config'; // Import your Firebase config
-import { collection, getDocs, updateDoc, doc, getDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { Card, Container, Button, Modal, ListGroup, Image, DropdownButton, Dropdown } from 'react-bootstrap';
+import { firestore, auth } from '../firebase-config';
+import { collection, getDocs, updateDoc, doc, getDoc, query, orderBy, where } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-
 import CommentsSection from './CommentsSection';
 
 function SharedPosts() {
-  const [posts, setPosts] = useState([]);
-  const [postLikes, setPostLikes] = useState({}); // Storing user details for likes
-  const [showLikesModal, setShowLikesModal] = useState(false);
-  const [currentPostLikes, setCurrentPostLikes] = useState([]);
+    const [posts, setPosts] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [postLikes, setPostLikes] = useState({});
+    const [showLikesModal, setShowLikesModal] = useState(false);
+    const [currentPostLikes, setCurrentPostLikes] = useState([]);
 
-  
+    useEffect(() => {
+        const fetchPosts = async () => {
+            let postsQuery;
+            if (selectedCategory === 'All') {
+                postsQuery = query(collection(firestore, 'wallPosts'), orderBy('createdAt', 'desc'));
+            } else {
+                postsQuery = query(collection(firestore, 'wallPosts'), where('category', '==', selectedCategory), orderBy('createdAt', 'desc'));
+            }
 
-  const fetchPosts = async () => {
-    const querySnapshot = await getDocs(collection(firestore, 'wallPosts'));
-    const postsData = querySnapshot.docs.map((doc) => {
-      const postData = doc.data();
-      return {
-        id: doc.id,
-        username: postData.username,
-        avatar: postData.avatar, // Ensure this field exists in your Firestore documents
-        text: postData.text,
-        photos: postData.photos,
-        photoUrl: postData.photoUrl,
-        createdAt: postData.createdAt,
-        likes: postData.likes || [],
-      };
-    });
-    setPosts(postsData);
-  };
+            const querySnapshot = await getDocs(postsQuery);
+            const postsData = querySnapshot.docs.map((doc) => {
+                const postData = doc.data();
+                return {
+                    id: doc.id,
+                    username: postData.username,
+                    avatar: postData.avatar,
+                    text: postData.text,
+                    photos: postData.photos,
+                    photoUrl: postData.photoUrl,
+                    createdAt: postData.createdAt.toDate(),
+                    likes: postData.likes || [],
+                };
+            });
+            setPosts(postsData);
+        };
+
+        fetchPosts();
+    }, [selectedCategory]);
+
+    const handleCategorySelect = (eventKey) => {
+        setSelectedCategory(eventKey);
+    };
+
+    const renderCategoriesDropdown = () => {
+        const categories = ['All', 'Urgent', 'Daily', 'Buy', 'Sell', 'Walks & Trips', 'Photo'];
+        return (
+            <DropdownButton id="category-dropdown" title="Filter by Category" onSelect={handleCategorySelect}>
+                {categories.map((category) => (
+                    <Dropdown.Item key={category} eventKey={category} active={selectedCategory === category}>
+                        {category}
+                    </Dropdown.Item>
+                ))}
+            </DropdownButton>
+        );
+    };
 
   const toggleLikePost = async (postId) => {
     const postRef = doc(firestore, 'wallPosts', postId);
@@ -97,15 +123,11 @@ function SharedPosts() {
   console.log("User IDs in modal:", users.map(u => u.id));
   };
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+
 
   // JSX for rendering posts
-  return (
-    <Container className="my-5">
-       {/* Render each post with its own like button and likes count */}
-      {posts.map((post) => (
+  const renderPosts = () => {
+    return posts.map((post) => (
         <Card key={post.id} className="mb-3">
           <Card.Header>
             <div className="d-flex align-items-center">
@@ -160,6 +182,7 @@ function SharedPosts() {
     <CommentsSection postId={post.id} currentUser={auth.currentUser} />
         </Card>
       ))}
+      
 
        {/* Modal for displaying users who liked a post */}
        <Modal show={showLikesModal} onHide={() => setShowLikesModal(false)}>
@@ -189,8 +212,16 @@ function SharedPosts() {
           </Button>
         </Modal.Footer>
       </Modal>
-    </Container>
+    
+
+return (
+  <Container className="my-5">
+      {renderCategoriesDropdown()}
+      {renderPosts()}
+      {/* Existing modal and other component logic */}
+  </Container>
   );
-}
+};
+
 
 export default SharedPosts;
