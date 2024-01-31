@@ -14,8 +14,12 @@ import { Link, useParams } from 'react-router-dom';
 import CommentsSection from './CommentsSection';
 import WalkRoutes from './WalkRoutes';
 import FriendRequests from './FriendRequests';
+import UserRoleSelector from './UserRoleSelector'; // Adjust the path according to your file structure
+
 
 import useFetchPosts from './useFetchPosts';
+
+
 
 function UserProfile() {
   const { userId: urlUserId } = useParams(); 
@@ -79,6 +83,8 @@ function UserProfile() {
 
   const [friends, setFriends] = useState([]);
 
+  const [showAllFriendsModal, setShowAllFriendsModal] = useState(false);
+
   const [posts, setPosts] = useState([]); // State to store user posts
   
   const [sharePostText, setSharePostText] = useState('');
@@ -97,6 +103,9 @@ function UserProfile() {
 const [currentPostLikes, setCurrentPostLikes] = useState([]);
 
 const [showWalkRoutesModal, setShowWalkRoutesModal] = useState(false);
+
+const [selectedRoles, setSelectedRoles] = useState([]);
+
 
 
 useEffect(() => {
@@ -407,11 +416,43 @@ const getUsernamesByIds = async (userIds) => {
       {friends.map((friend, idx) => (
         <div key={idx} className="carousel-friend-container">
           <Image src={friend.photoUrl} roundedCircle className="friend-avatar-img" />
-          <p className="friend-username">{friend.name}</p>
+          <Link to={`/user-profile/${friend.id}`} className="friend-username">
+          {friend.name}
+        </Link>
         </div>
       ))}
     </Carousel>
   );
+
+  const renderAllFriendsModal = () => (
+    <Modal show={showAllFriendsModal} onHide={() => setShowAllFriendsModal(false)}>
+    <Modal.Header closeButton>
+      <Modal.Title>All Friends</Modal.Title>
+    </Modal.Header>
+    <Modal.Body>
+      <ListGroup>
+        {friends.map(friend => (
+          <ListGroup.Item key={friend.id} className="d-flex align-items-center">
+            <Image 
+              src={friend.photoUrl || '/path/to/default_avatar.jpg'} // Default avatar if none is provided
+              roundedCircle 
+              style={{ width: '40px', height: '40px', marginRight: '10px' }} 
+            />
+            <Link to={`/user-profile/${friend.id}`} className="friend-username">
+              {friend.name}
+            </Link>
+          </ListGroup.Item>
+        ))}
+      </ListGroup>
+    </Modal.Body>
+    <Modal.Footer>
+      <Button variant="secondary" onClick={() => setShowAllFriendsModal(false)}>
+        Close
+      </Button>
+    </Modal.Footer>
+  </Modal>
+  );
+  
 
   const addNewPostToState = async (newPostData) => {
     try {
@@ -659,6 +700,16 @@ return (
     <FontAwesomeIcon icon={faCamera} size="2x" /> {/* Replace with your preferred icon */}
   </div>
 </div>
+
+<div className="profile-roles">
+  {selectedRoles.map(role => (
+    <p key={role} className="profile-role">
+      {role}
+    </p>
+  ))}
+</div>
+
+
               <div className="profile-text" style={{ textAlign: 'center' }}>
                   <p>I bring joy into the life of: {profile.owner.name || "Owner's Name"}</p>
                   <p><span role="img" aria-label="location">📍</span> We are living in: {profile.owner.city || 'City'}, {profile.owner.state || 'State'}</p>
@@ -721,7 +772,9 @@ return (
               <Card className="friends-card">
                   <Card.Header className="friends-card-header">
                       Our Friends: <span className="friends-count">{friends.length}</span>
-                      <Button variant="link" className="show-all-btn">Show All</Button>
+                      <Button variant="link" className="show-all-btn" onClick={() => setShowAllFriendsModal(true)}>
+    Show All
+  </Button>
                   </Card.Header>
                   <Card.Body>{renderFriendsCarousel()}</Card.Body>
               </Card>
@@ -811,11 +864,16 @@ return (
                                             onChange={handleChange('owner', key)}
                                         />
                                     </Form.Group>
+                                    
                                 );
                             }
                             return null;
                         })}
                     </Form>
+                                               {/* UserRoleSelector for role selection */}
+        <UserRoleSelector
+          selectedRoles={selectedRoles}
+          onSelectRole={setSelectedRoles} />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={handleClose}>
@@ -911,7 +969,10 @@ return (
   showModal={showWalkRoutesModal} 
   handleClose={() => setShowWalkRoutesModal(false)} 
 />
-        </Container>
+
+    {renderAllFriendsModal()}
+  </Container>
+      
     );
 }
 
