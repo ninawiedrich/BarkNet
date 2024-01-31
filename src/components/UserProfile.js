@@ -13,6 +13,7 @@ import PhotoGallery from './PhotoGallery';
 import { Link, useParams } from 'react-router-dom';
 import CommentsSection from './CommentsSection';
 import WalkRoutes from './WalkRoutes';
+import FriendRequests from './FriendRequests';
 
 import useFetchPosts from './useFetchPosts';
 
@@ -76,13 +77,7 @@ function UserProfile() {
   const [newProfileData, setNewProfileData] = useState({ owner: {}, dog: {} });
   const [file, setFile] = useState(null);
 
-  const friends = [
-    { username: 'Friend1', avatar: 'path/to/avatar1.jpg' },
-    { username: 'Friend2', avatar: 'path/to/avatar2.jpg' },
-    { username: 'Friend3', avatar: 'path/to/avatar3.jpg' },
-    { username: 'Friend4', avatar: 'path/to/avatar4.jpg' },
-    { username: 'Friend5', avatar: 'path/to/avatar5.jpg' },
-  ];
+  const [friends, setFriends] = useState([]);
 
   const [posts, setPosts] = useState([]); // State to store user posts
   
@@ -367,6 +362,29 @@ const getUsernamesByIds = async (userIds) => {
     }
   };
 
+  const fetchFriendsData = async () => {
+    if (!userId) return;
+  
+    const ownerRef = doc(firestore, 'owners', userId);
+    const ownerSnap = await getDoc(ownerRef);
+  
+    if (ownerSnap.exists() && ownerSnap.data().friends) {
+      const friendsIds = ownerSnap.data().friends;
+      const friendsData = await getUsernamesByIds(friendsIds);
+      setFriends(friendsData);
+      console.log(friendsData);
+    }
+  };
+  
+  useEffect(() => {
+    fetchFriendsData();
+  }, [userId]); // This useEffect will run when the userId changes
+  
+  useEffect(() => {
+    console.log('Friends data for rendering:', friends);
+  }, [friends]);
+  
+
   const renderFriendsCarousel = () => (
     <Carousel
       swipeable={true}
@@ -388,8 +406,8 @@ const getUsernamesByIds = async (userIds) => {
     >
       {friends.map((friend, idx) => (
         <div key={idx} className="carousel-friend-container">
-          <Image src={friend.avatar} roundedCircle className="friend-avatar-img" />
-          <p className="friend-username">{friend.username}</p>
+          <Image src={friend.photoUrl} roundedCircle className="friend-avatar-img" />
+          <p className="friend-username">{friend.name}</p>
         </div>
       ))}
     </Carousel>
@@ -599,6 +617,26 @@ const renderPosts = () => {
   ));
 };
 
+const sendFriendRequest = async (senderId, receiverId) => {
+  if (!senderId || !receiverId) {
+    console.error("Sender and receiver IDs are required");
+    return;
+  }
+
+  try {
+    // Add a new document to the friendRequests collection
+    await addDoc(collection(firestore, 'friendRequests'), {
+      senderId: senderId,
+      receiverId: receiverId,
+      status: 'pending'
+    });
+    alert("Friend request sent!");
+  } catch (error) {
+    console.error("Error sending friend request: ", error);
+    alert("Failed to send friend request.");
+  }
+};
+
 
 
 return (
@@ -637,6 +675,18 @@ return (
               <Button variant="primary" className="profile-btn" onClick={() => setShowWalkRoutesModal(true)}>
     Our Walks
 </Button>
+
+  {/* Friend Request Button */}
+  {currentUser.uid !== userId && (
+      <Button variant="primary" className="profile-btn" onClick={() => sendFriendRequest(currentUser.uid, userId)}>
+        Add as Friend
+      </Button>
+    )}
+
+     {/* Friend Requests Component */}
+     <FriendRequests userId={currentUser.uid} />
+
+
           </Col>
 
           <Col md={8}>

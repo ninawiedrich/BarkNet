@@ -116,3 +116,23 @@
   display: block; /* Display block for proper alignment */
   margin: 10px auto; /* Center the image and add some margin */
 }
+
+.friend-avatar-img {
+  width: 100px; 
+  height: 100px; 
+  object-fit: cover; 
+  border-radius: 50%;
+  margin-top: 1rem;
+}
+
+.carousel-friend-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.friend-username {
+  text-align: center;
+  margin-top: 1rem; /* Adjust this value as needed */
+}
