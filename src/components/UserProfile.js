@@ -181,7 +181,7 @@ const getUsernamesByIds = async (userIds) => {
     };
   
     fetchProfile();
-  }, [userId]); // Add userId as a dependency
+  }, [userId]); 
   
 
   useEffect(() => {
@@ -191,7 +191,6 @@ const getUsernamesByIds = async (userIds) => {
       const postsQuery = query(collection(firestore, 'wallPosts'), where('userId', '==', userId));
       const querySnapshot = await getDocs(postsQuery);
       const userPosts = querySnapshot.docs.map(doc => {
-        // Ensure that photoUrl or photos (whichever field you use) is being fetched correctly
         const data = doc.data();
         return { id: doc.id, ...data };
       });
