@@ -162,26 +162,22 @@ const getUsernamesByIds = async (userIds) => {
       if (userId) {
         const ownerRef = doc(firestore, 'owners', userId);
         const ownerSnap = await getDoc(ownerRef);
-  
+    
         if (ownerSnap.exists()) {
+          const ownerData = ownerSnap.data();
           setProfile((prevProfile) => ({
             ...prevProfile,
-            owner: ownerSnap.data(),
-            photoUrl: ownerSnap.data().photoUrl,
+            owner: ownerData,
+            photoUrl: ownerData.photoUrl,
           }));
-        }
-  
-        const dogRef = doc(firestore, 'dogs', userId);
-        const dogSnap = await getDoc(dogRef);
-  
-        if (dogSnap.exists()) {
-          setProfile((prevProfile) => ({ ...prevProfile, dog: dogSnap.data() }));
+          
+          setSelectedRoles(ownerData.roles || []);
         }
       }
     };
   
     fetchProfile();
-  }, [userId]); 
+  }, [userId]); // Re-run this effect when userId changes
   
 
   useEffect(() => {
@@ -214,6 +210,8 @@ const getUsernamesByIds = async (userIds) => {
     
     fetchLikes();
   }, [posts]);
+
+  
   
 
   // Fetch or create profile
@@ -870,9 +868,11 @@ return (
                         })}
                     </Form>
                                                {/* UserRoleSelector for role selection */}
-        <UserRoleSelector
-          selectedRoles={selectedRoles}
-          onSelectRole={setSelectedRoles} />
+           <UserRoleSelector
+      userId={userId}
+      selectedRoles={selectedRoles}
+      onSelectRole={setSelectedRoles} //pass the state setter function
+    />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={handleClose}>
